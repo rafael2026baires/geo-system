@@ -1,0 +1,36 @@
+.kpi-container {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.kpi-card {
+  border: 0.5px solid #555;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.kpi-value {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.kpi-main {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.kpi-total {
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+.kpi-label {
+  font-size: 11px;
+  opacity: 0.6;
+}

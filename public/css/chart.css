@@ -1,0 +1,22 @@
+#charts-summary {
+  position: relative;
+  height: 200px;
+  margin-bottom: 10px;
+}
+
+#chart-pedidos-wrap {
+  position: absolute;
+  left: 6%;      /* mueve la torta */
+  width: 50%;     /* más grande */
+}
+
+#chart-vehiculos-wrap {
+  position: absolute;
+  left: 58%;      /* posición de las barras */
+  width: 35%;     /* más angosto */
+}
+
+#chart-vehiculos-3d,
+#chart-pedidos-3d {
+  height: 180px;
+}

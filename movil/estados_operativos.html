@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operario</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  select { width: 100%; padding: 12px; font-size: 18px; }
+  #estado { margin-top: 20px; padding: 18px; font-size: 22px; text-align: center; border: 2px solid #333; }
+  button { width: 100%; margin-top: 12px; padding: 18px; font-size: 20px; }
+</style>
+</head>
+<body>
+
+<h2>Unidad</h2>
+
+<select id="unitSelect">
+  <option value="">Cargando unidades...</option>
+</select>
+
+<div id="estado">–</div>
+
+<button id="accionBtn" style="display:none;">ACCION</button>
+<button id="btnOff" style="display:none;">DESACTIVAR</button>
+<button id="btnOn"  style="display:none;">ACTIVAR</button>
+
+<script>
+const TENANT_ID = 'pyme_demo';
+
+const estadoDiv = document.getElementById('estado');
+const sel = document.getElementById('unitSelect');
+
+const btnAcc = document.getElementById('accionBtn');
+const btnOff = document.getElementById('btnOff');
+const btnOn  = document.getElementById('btnOn');
+
+let currentUnit = null;
+let cacheStates = [];
+
+async function fetchStates() {
+  const res = await fetch(`../api/operations/get_units_state.php?tenant_id=${TENANT_ID}`);
+  cacheStates = await res.json();
+  return cacheStates;
+}
+
+function fillSelect(rows) {
+  sel.innerHTML = '<option value="">Seleccionar camión</option>';
+  rows.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.unit_id;
+    opt.textContent = r.unit_id;
+    sel.appendChild(opt);
+  });
+}
+
+function findState(unitId) {
+  return cacheStates.find(x => x.unit_id === unitId);
+}
+
+function setButtonsForState(u) {
+  // reset
+  btnAcc.style.display = 'none';
+  btnOff.style.display = 'none';
+  btnOn.style.display  = 'none';
+  btnAcc.onclick = null;
+  btnOff.onclick = null;
+  btnOn.onclick  = null;
+
+  if (!u) return;
+
+  // Si está INACTIVE: solo permitir ACTIVAR
+  if (u.active === 0) {
+    btnOn.style.display = 'block';
+    btnOn.textContent = 'ACTIVAR';
+    btnOn.onclick = () => postEvent('activate_unit.php');
+    return;
+  }
+
+  // ACTIVE: permitir DESACTIVAR + acción contextual
+  btnOff.style.display = 'block';
+  btnOff.textContent = 'DESACTIVAR';
+  btnOff.onclick = () => postEvent('deactivate_unit.php');
+
+  btnAcc.style.display = 'block';
+
+  if (u.active === 1 && u.cargo==='EMPTY' && u.phase==='DEPOT') {
+    btnAcc.textContent = 'CARGAR';
+    btnAcc.onclick = () => postEvent('load_confirmed.php');
+    return;
+  }
+
+  if (u.active === 1 && u.cargo==='LOADED' && u.phase==='DEPOT') {
+    btnAcc.textContent = 'DESPACHAR';
+    btnAcc.onclick = () => postEvent('dispatch_trip.php');
+    return;
+  }
+
+  if (u.active === 1 && u.cargo==='LOADED' && u.phase==='TRANSIT') {
+    btnAcc.textContent = 'ENTREGAR';
+    btnAcc.onclick = () => postEvent('delivery_completed.php');
+    return;
+  }
+
+  if (u.active === 1 && u.cargo==='EMPTY' && u.phase==='TRANSIT') {
+    btnAcc.textContent = 'CHECK-IN';
+    btnAcc.onclick = () => postEvent('checkin_depot.php');
+    return;
+  }
+
+  // Si no matchea ningún estado válido, ocultar acción
+  btnAcc.style.display = 'none';
+}
+
+async function refreshUI() {
+  await fetchStates();
+
+  // si todavía no cargamos el select (primera vez)
+  if (sel.options.length <= 1 || sel.options[0].textContent.includes('Cargando')) {
+    fillSelect(cacheStates);
+  }
+
+  if (!currentUnit) {
+    estadoDiv.textContent = '–';
+    setButtonsForState(null);
+    return;
+  }
+
+  const u = findState(currentUnit);
+  if (!u) {
+    estadoDiv.textContent = 'Sin estado';
+    setButtonsForState(null);
+    return;
+  }
+
+  estadoDiv.textContent = `${u.active} / ${u.cargo ?? '-'} / ${u.phase ?? '-'}`;
+  setButtonsForState(u);
+}
+
+async function postEvent(endpoint) {
+  if (!currentUnit) return;
+
+  const res = await fetch(`../api/operations/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenant_id: TENANT_ID, unit_id: currentUnit })
+  });
+
+  // log simple
+  try { console.log(await res.json()); } catch (e) { console.log('no json'); }
+
+  // refrescar estado y botones
+  await refreshUI();
+}
+
+sel.onchange = async e => {
+  currentUnit = e.target.value || null;
+  await refreshUI();
+};
+
+// inicial
+refreshUI();
+</script>
+
+</body>
+</html>

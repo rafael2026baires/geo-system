@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+    .login-box {
+      width: 320px;
+      margin: 100px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .login-box h2 {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .login-box input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h2>Ingreso</h2>
+
+    <form method="post" action="login.php">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+</body>
+</html>

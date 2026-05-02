@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+    
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Geolocalización</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="./css/styles.css">
+  
+  <link rel="stylesheet" href="./css/grid.css">
+  <link rel="stylesheet" href="./css/chart.css">
+  <link rel="stylesheet" href="./css/cards.css">
+  
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  
+</head>
+
+<body>
+
+<header>
+   <div class="titulo">
+     <h1>Geolocalización TwyBox</h1>
+   </div>
+  
+   <div class="acciones">
+    <!-- <button id="btnReplay">▶ Replay</button> -->     
+    <button id="btnFitAll" class="btn-fit-all">Ver todas</button>
+    <button id="modeMap">Mapa</button>
+    <button id="modeFloating">Ventana</button>
+    <span id="modeLabel">Modo: Mapa</span>
+   </div>  
+  
+    <div id="userBox">
+      <button id="userBtn">Usuario ▾</button>
+      <div id="userMenu" class="user-menu-hidden">
+        <a href="login/logout.php">Cerrar sesión</a>
+      </div>
+    </div>
+  
+</header>
+
+<div id="layout">
+    
+    <aside id="sidebar">
+    <!-- **************** CARDS KPI ************* -->    
+    <div id="kpi-container" class="kpi-container">
+    
+      <!-- Activos -->
+      <div class="kpi-card" id="kpi-activos">
+        <div class="kpi-value">
+          <span class="kpi-main">0</span>
+          <span class="kpi-total">/0</span>
+        </div>
+        <div class="kpi-label">Vehículos Activos</div>
+      </div>
+    
+      <!-- En tránsito -->
+      <div class="kpi-card" id="kpi-transito">
+        <div class="kpi-value">
+          <span class="kpi-main">0</span>
+        </div>
+        <div class="kpi-label">En tránsito</div>
+      </div>
+    
+      <!-- Con señal -->
+      <div class="kpi-card" id="kpi-senal">
+        <div class="kpi-value">
+          <span class="kpi-main">0</span>
+        </div>
+        <div class="kpi-label">Con señal</div>
+      </div>
+    
+      <!-- Pendientes -->
+      <div class="kpi-card" id="kpi-pendientes">
+        <div class="kpi-value">
+          <span class="kpi-main">0</span>
+        </div>
+        <div class="kpi-label">Pedidos por Entrega</div>
+      </div>
+    
+    </div>   
+    <!--  ****************** CONTENEDORES ***************** -->   
+    <div class="boxes-container">
+      <div class="box box-1"></div>
+      <div class="box box-2"></div>      
+    </div>  
+    <!-- **** Gráficos de torta 3d y barras verticales **** -->     
+    <div id="charts-summary">
+        
+        <div id="chart-pedidos-wrap">
+            <div id="chart-pedidos-3d"></div>
+        </div>
+        
+        <div id="chart-vehiculos-wrap">
+            <div id="chart-vehiculos-3d"></div>
+        </div>
+
+    </div>
+    <!--  *************************************** -->     
+    
+    <div id="grid-new"></div>
+    </aside>
+    
+    <div id="map"></div>
+    <div id="floating-map" class="floating-map hidden">
+      <button id="floating-close">✕</button>
+      <span id="floating-label" class="floating-label hidden"></span>
+      <div class="resize-left"></div>
+      <div class="resize-right"></div>
+      <div class="resize-bottom"></div>
+      <div class="floating-resize"></div>   
+    </div>    
+  
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="./js/main.js?v=dev52"></script>
+
+</body>
+</html>

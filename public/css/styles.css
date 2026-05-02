@@ -1,0 +1,508 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+/* ===== Header ===== */
+header {
+  padding: 10px 16px;
+  background: #2B201D;
+  color: #fff;
+  font-size: 18px;
+  display: grid;                          /* antes: flex */
+  grid-template-columns: auto 1fr auto;   /* 3 columnas: t���tulo, centro, derecha */
+  align-items: center;
+  height: 48px;
+}
+
+.acciones {
+  display: flex;
+  gap: 10px;
+  justify-self: center;  /* centra el bloque de botones en la barra superior */
+}
+
+
+.titulo h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+  color: #BDBDBD;
+  font-family: "Arial Black", Arial, sans-serif;
+}
+
+.acciones {
+  display: flex;
+  gap: 10px; /* espacio autom���tico entre botones */
+}
+
+header button {
+  background: #4b5563;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+header button:hover {
+  background: #6b7280;
+}
+
+#btnReal {
+  display: none;
+}
+
+
+/* ===== Layout general ===== */
+#layout {
+  display: flex;
+  height: calc(100vh - 48px); /* resta el header */
+  overflow: hidden;
+}
+
+/* ------  Marca del mapa  --------- */
+.leaflet-control-attribution {
+  font-size: 10px;
+  opacity: 0.6;
+}
+/* --------------------------------- */
+
+/* ===== Sidebar izquierda ===== */
+#sidebar {
+  position: relative;    
+  width: 600px;
+  background: #2B201D;
+  color: #e5e7eb;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+#sidebar h3 {
+  margin-top: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #A6A6A6;
+  padding-bottom: 6px;
+}
+
+/* ===== Panel interno (temporal) ===== */
+#panel {
+  margin-top: 10px;
+}
+
+#panel h3 {
+  font-size: 14px;
+  margin: 12px 0 4px;
+  color: #9ca3af;
+}
+
+#panel div {
+  font-size: 14px;
+}
+
+/* ===== Mapa ===== */
+#map {
+  flex: 1;
+  overflow: hidden;
+}
+/* ----------------------------------------------------- */
+/* ----------------------------------------------------- */
+.vehicle-marker {
+  transform-origin: center center;
+}
+
+/*
+.marker-offline {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+*/
+
+/* ===== Vehicle PNG (rotación) ===== */
+.veh-icon { 
+  --bearing: 0deg;
+}
+
+.veh-icon .veh-img{
+  width: 28px;
+  height: 28px;
+  transform: rotate(var(--bearing));
+  transform-origin: 50% 50%;
+  display: block;
+}
+
+
+/* ===============================
+   FLEET �� ESTADO OPERATIVO (SVG)
+   =============================== */
+
+.fleet-opstate {
+  display: inline-block;
+  width: 21px;
+  height: 21px;
+  margin-left: 8px;
+
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.fleet-item:hover .fleet-opstate {
+  opacity: 0.8;
+}
+/* ---------------------------CUADRO DE RES���MEN --------------------------------- */
+.fleet-op-summary {
+  padding: 8px 10px;
+  margin-bottom: 30px; /* �� leve aire extra abajo */
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  border: 3px solid rgba(255,255,255,0.05); 
+  border-radius: 8px;
+}
+
+.fleet-op-summary .sum-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 3px 0;
+}
+
+.fleet-op-summary .sum-label {
+  color: #aaa;
+}
+
+.fleet-op-summary .sum-value {
+  color: #fff;
+  font-weight: 500;
+}
+
+.fleet-op-summary .sum-row.inactive {
+  opacity: 0.6;
+}
+/* ----------------------------------------------------------------------------- */
+/* ===== FLEET SUMMARY ICONS (CORRECTO) ===== */
+
+.fleet-op-summary .sum-icon {
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.85;
+}
+
+/* reutiliza los SVG EXISTENTES */
+.fleet-op-summary .sum-icon.op-idle,
+.fleet-opstate.op-idle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238A8A8A' d='M12 4.5 3.5 12a1 1 0 0 0 .7 1.7H6v5.3A1.5 1.5 0 0 0 7.5 20h3.5v-4h2v4h3.5A1.5 1.5 0 0 0 18 19v-5.3h1.8a1 1 0 0 0 .7-1.7L12 4.5z'/%3E%3C/svg%3E");
+}
+
+.fleet-op-summary .sum-icon.op-loaded,
+.fleet-opstate.op-loaded {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238A8A8A' d='M4.5 7.5 12 4l7.5 3.5v9L12 20l-7.5-3.5v-9zM12 6.2 6.6 8.7 12 11.2l5.4-2.5L12 6.2z'/%3E%3C/svg%3E");
+}
+
+.fleet-op-summary .sum-icon.op-delivering,
+.fleet-opstate.op-delivering {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238A8A8A' d='M3.5 7A1.5 1.5 0 0 1 5 5.5h9A1.5 1.5 0 0 1 15.5 7v6H3.5V7zm12 1.5h3.2l2.3 2.6V15h-5.5V8.5zM6.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm11 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z'/%3E%3C/svg%3E");
+}
+
+.fleet-op-summary .sum-icon.op-returning,
+.fleet-opstate.op-returning {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238A8A8A' d='M7 6V4L3.5 7.5 7 11V9h7a4 4 0 1 1 0 8H9.5a1 1 0 1 0 0 2H14a6 6 0 1 0 0-12H7z'/%3E%3C/svg%3E");
+}
+
+.fleet-op-summary .sum-icon.op-inactive,
+.fleet-opstate.op-inactive {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23DEDEDE' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a7.9 7.9 0 0 1 4.9 1.7L5.7 16.9A8 8 0 0 1 12 4zm0 16a7.9 7.9 0 0 1-4.9-1.7L18.3 7.1A8 8 0 0 1 12 20z'/%3E%3C/svg%3E");
+  opacity: 0.45;
+}
+
+
+.veh-wrapper {
+  position: relative;
+}
+
+.veh-label {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #FFFD85;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.veh-label.hidden {
+  display: none;
+}
+
+/* ------------------------------------------ */
+#userBox { margin-left: auto; }
+#userBtn {
+  background: none;
+  border: none;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+}
+/* ------------------------------------------ */
+#userMenu {
+  position: absolute;
+  right: 10px;
+  top: 40px;
+  background: #1f2933;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  z-index: 1000;
+}
+
+#userMenu a {
+  display: block;
+  padding: 10px 14px;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#userMenu a:hover {
+  background: #374151;
+}
+
+.user-menu-hidden {
+  display: none;
+}
+
+/* ----------------------------------------------- */
+
+.led {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.led-green { background: #00c853; }
+.led-yellow { background: #ffd600; }
+.led-orange { background: #CC6100; }
+.led-red { background: #D40000; }
+.led-blue { background: #2979ff; }
+.led-violet { background: #59498F; }
+.led-gray-dark { background: #616161; }
+
+
+.vehicle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.vehicle-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.vehicle-name {
+  font-size: 13px;
+}
+
+/* ----------- SIDEBAR COLUMNAS ESTADOS ------------------ */
+.row {
+  display: grid;
+  grid-template-columns: 150px repeat(5, 1fr);
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+}
+
+.col {
+  text-align: center;
+  border-left: 1px solid #ccc;
+  padding: 6px;
+}
+
+.header {
+  font-weight: bold;
+  border-bottom: 2px solid #000;
+}
+
+.row.inactive {
+  opacity: 0.4;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row.active {
+  background: rgba(0, 150, 255, 0.2);
+}
+
+.follow-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 1000;
+}
+
+.follow-indicator.hidden {
+  display: none;
+}
+/* ----------- VENTANA FLOTANTE FOCO SEGUIMIENTO MARKER ------------------------- */
+.floating-map {
+  position: absolute;
+  cursor: move;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  height: 200px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(4px);    
+  overflow: hidden;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.floating-label {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.resize-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.floating-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  cursor: se-resize;
+  background: transparent;
+}
+
+#floating-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: background 0.2s;
+}
+
+#floating-close:hover {
+  background: rgba(255,0,0,0.7);
+}  
+
+.floating-map:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+.floating-map:active {
+  cursor: grabbing;
+}
+
+.hidden {
+  display: none;
+}
+
+#floating-map {
+  cursor: move;
+}
+
+#floating-map:active {
+  cursor: grabbing;
+}
+
+#floating-map .leaflet-container,
+#floating-map .leaflet-grab,
+#floating-map .leaflet-dragging {
+  cursor: default !important;
+}
+
+
+/* --------------------  CONTENEDORES  ------------------- */
+.box {
+  position: absolute;
+  border: 0.5px solid #3D3D3D;
+  pointer-events: none;
+}
+
+.box-1 {
+  top: 9%;
+  left: 1.5%;
+  width: 98%;
+  height: 20%;
+}
+
+.box-2 {
+  top: 30%;
+  left: 1.5%;
+  width: 98%;
+  height: 68%;
+}
+
+/* ------------------------------------------------------- */
+/* ------------------------------------------------------- */
+
+.leaflet-tile {
+  outline: 1px solid transparent;
+}

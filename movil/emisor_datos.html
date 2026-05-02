@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Emisor GPS Twybox</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .ok { color: green; }
+    .err { color: red; }
+    .box { margin-top: 12px; padding: 12px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+<h2>Emisor GPS – Twybox</h2>
+
+<div class="box">
+  <strong>Unidad:</strong> <span id="unitLabel"></span>
+</div>
+
+<div class="box">
+  <div>Estado WS: <span id="wsStatus">conectando…</span></div>
+  <div>Último envío: <span id="lastSend">—</span></div>
+  <div>Lat: <span id="lat">—</span></div>
+  <div>Lng: <span id="lng">—</span></div>
+</div>
+
+<script>
+
+   // --------------------------------------------------------------------
+    const tenantId = 'pyme_demo';
+    // === AUTO UNIT ID ===
+    const UNIT_KEY = 'twybox_unit_id';
+    
+    function generateUnitId() {
+      return 'U-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
+    
+    let unitId = localStorage.getItem(UNIT_KEY);
+    if (!unitId) {
+      unitId = generateUnitId();
+      localStorage.setItem(UNIT_KEY, unitId);
+    }
+    // -------------------------------------------------------------------
+  
+  document.getElementById('unitLabel').textContent = unitId;
+
+  
+  const WS_URL   = 'wss://twybox-ws-core.onrender.com';
+  const SEND_EVERY_MS = 10000; // 10 segundos
+  // ============================================
+
+  const wsStatus = document.getElementById('wsStatus');
+  const lastSend = document.getElementById('lastSend');
+  const latEl = document.getElementById('lat');
+  const lngEl = document.getElementById('lng');
+
+  let ws;
+  let lastSentAt = 0;
+
+  function connectWS() {
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => {
+        
+    ws.send(JSON.stringify({
+      v: 1,
+      type: 'register',
+      tenantId,
+      unitId,
+      src: 'browser'
+    }));
+        
+      wsStatus.textContent = 'conectado';
+      wsStatus.className = 'ok';
+    };
+
+    ws.onerror = () => {
+      wsStatus.textContent = 'error';
+      wsStatus.className = 'err';
+    };
+
+    ws.onclose = () => {
+      wsStatus.textContent = 'desconectado (reintentando…)';
+      wsStatus.className = 'err';
+      setTimeout(connectWS, 3000);
+    };
+  }
+
+  connectWS();
+
+  function sendPosition(position) {
+    const now = Date.now();
+    if (now - lastSentAt < SEND_EVERY_MS) return;
+
+    lastSentAt = now;
+
+    const payload = {
+      v: 1,
+      type: 'pos',
+      tenantId,
+      unitId,
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      ts: now,
+      src: 'browser'
+    };
+
+    latEl.textContent = payload.lat.toFixed(6);
+    lngEl.textContent = payload.lng.toFixed(6);
+    lastSend.textContent = new Date(now).toLocaleTimeString();
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
+    }
+  }
+
+  navigator.geolocation.watchPosition(
+    sendPosition,
+    err => {
+      wsStatus.textContent = 'GPS error';
+      wsStatus.className = 'err';
+      console.error(err);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+</script>
+
+</body>
+</html>

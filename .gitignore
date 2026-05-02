@@ -1,0 +1,6 @@
+.env.*
+.env
+*.md
+docs/
+_support/
+legacy/
