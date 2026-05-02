@@ -10,8 +10,8 @@ if (getEnv() === 'local') {
     if (!defined('DB_USER')) define('DB_USER', 'root');
     if (!defined('DB_PASS')) define('DB_PASS', ''); 
 }
-else {
-    if (!defined('DB_HOST')) define('DB_HOST', 'geo.local');
+else {    
+    if (!defined('DB_HOST')) define('DB_HOST', '127.0.0.1');
     if (!defined('DB_USER')) define('DB_USER', 'root');
     if (!defined('DB_PASS')) define('DB_PASS', '');
 }
@@ -23,8 +23,8 @@ class Conexion extends PDO {
 
     public function __construct($bd = null) {
         
-        $bd = $bd ?? 'geolocalizacion';
-        $this->nombreBd = "pymebit_" . $bd; 
+        $bd = $bd ?? 'geolocalizacion';        
+        $this->nombreBd = $bd;
         
         try {
             parent::__construct(
