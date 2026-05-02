@@ -2,19 +2,9 @@
 
 require_once __DIR__ . '/env.php';
 
-// Detectar entorno: local vs VPS
-if (getEnv() === 'local') {          
-
-    // Configuración LOCAL (XAMPP)
-    if (!defined('DB_HOST')) define('DB_HOST', 'geo.local');
-    if (!defined('DB_USER')) define('DB_USER', 'root');
-    if (!defined('DB_PASS')) define('DB_PASS', ''); 
-}
-else {    
-    if (!defined('DB_HOST')) define('DB_HOST', '127.0.0.1');
-    if (!defined('DB_USER')) define('DB_USER', 'root');
-    if (!defined('DB_PASS')) define('DB_PASS', '');
-}
+define('DB_HOST', getenv_config('DB_HOST'));
+define('DB_USER', getenv_config('DB_USER'));
+define('DB_PASS', getenv_config('DB_PASS'));
 
 class Conexion extends PDO {
     
