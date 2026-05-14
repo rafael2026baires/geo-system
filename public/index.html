@@ -27,6 +27,7 @@
    <div class="acciones">
     <!-- <button id="btnReplay">▶ Replay</button> -->     
     <button id="btnFitAll" class="btn-fit-all">Ver todas</button>
+    <button id="toggleSidebar">Panel</button>
     <button id="modeMap">Mapa</button>
     <button id="modeFloating">Ventana</button>
     <span id="modeLabel">Modo: Mapa</span>
@@ -44,43 +45,54 @@
 <div id="layout">
     
     <aside id="sidebar">
-    <!-- **************** CARDS KPI ************* -->    
-    <div id="kpi-container" class="kpi-container">
-    
-      <!-- Activos -->
-      <div class="kpi-card" id="kpi-activos">
-        <div class="kpi-value">
-          <span class="kpi-main">0</span>
-          <span class="kpi-total">/0</span>
-        </div>
-        <div class="kpi-label">Vehículos Activos</div>
-      </div>
-    
-      <!-- En tránsito -->
-      <div class="kpi-card" id="kpi-transito">
-        <div class="kpi-value">
-          <span class="kpi-main">0</span>
-        </div>
-        <div class="kpi-label">En tránsito</div>
-      </div>
-    
-      <!-- Con señal -->
-      <div class="kpi-card" id="kpi-senal">
-        <div class="kpi-value">
-          <span class="kpi-main">0</span>
-        </div>
-        <div class="kpi-label">Con señal</div>
-      </div>
-    
-      <!-- Pendientes -->
-      <div class="kpi-card" id="kpi-pendientes">
-        <div class="kpi-value">
-          <span class="kpi-main">0</span>
-        </div>
-        <div class="kpi-label">Pedidos por Entrega</div>
-      </div>
-    
-    </div>   
+
+    <div id="sidebar-resizer"></div>
+
+
+
+    <!-- **************** CARDS KPI ************* -->        
+    <div class="kpi-summary">
+
+      <div class="kpi-scroll">
+          <div id="kpi-container" class="kpi-container">  
+        
+          <!-- Activos -->
+          <div class="kpi-card" id="kpi-activos">
+            <div class="kpi-value">
+              <span class="kpi-main">0</span>
+              <span class="kpi-total">/0</span>
+            </div>
+            <div class="kpi-label">Vehículos Activos</div>
+          </div>
+        
+          <!-- En tránsito -->
+          <div class="kpi-card" id="kpi-transito">
+            <div class="kpi-value">
+              <span class="kpi-main">0</span>
+            </div>
+            <div class="kpi-label">En tránsito</div>
+          </div>
+        
+          <!-- Con señal -->
+          <div class="kpi-card" id="kpi-senal">
+            <div class="kpi-value">
+              <span class="kpi-main">0</span>
+            </div>
+            <div class="kpi-label">Con señal</div>
+          </div>
+        
+          <!-- Pendientes -->
+          <div class="kpi-card" id="kpi-pendientes">
+            <div class="kpi-value">
+              <span class="kpi-main">0</span>
+            </div>
+            <div class="kpi-label">Pedidos por Entrega</div>
+          </div>
+          
+          </div>
+      </div>    
+    </div> 
+
     <!--  ****************** CONTENEDORES ***************** -->   
     <div class="boxes-container">
       <div class="box box-1"></div>
@@ -88,19 +100,25 @@
     </div>  
     <!-- **** Gráficos de torta 3d y barras verticales **** -->     
     <div id="charts-summary">
-        
-        <div id="chart-pedidos-wrap">
-            <div id="chart-pedidos-3d"></div>
-        </div>
-        
-        <div id="chart-vehiculos-wrap">
-            <div id="chart-vehiculos-3d"></div>
-        </div>
+      <div class="charts-scroll">
+        <div class="charts-track">
 
+          <div id="chart-pedidos-wrap" class="chart-card">
+            <div id="chart-pedidos-3d"></div>
+          </div>
+
+          <div id="chart-vehiculos-wrap" class="chart-card">
+            <div id="chart-vehiculos-3d"></div>
+          </div>
+
+        </div>
+      </div>
     </div>
-    <!--  *************************************** -->     
+    <!--  *************************************** -->         
     
-    <div id="grid-new"></div>
+    <div class="grid-summary">
+       <div id="grid-new"></div>
+    </div>
     </aside>
     
     <div id="map"></div>

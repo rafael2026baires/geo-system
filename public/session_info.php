@@ -19,10 +19,11 @@ if (!$tenant_id) {
 $default_lat = null;
 $default_lng = null;
 $base_radius_m = null;
+$uses_obd = 0;
 
 // buscar coords del tenant
-if ($tenant_id) {
-    $stmt = $pdo->prepare("SELECT default_lat, default_lng, base_radius_m FROM tenants WHERE id = ?");
+if ($tenant_id) {    
+    $stmt = $pdo->prepare("SELECT default_lat, default_lng, base_radius_m, uses_obd FROM tenants WHERE id = ?");
     $stmt->execute([$tenant_id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -30,11 +31,14 @@ if ($tenant_id) {
         $default_lat = $row['default_lat'];
         $default_lng = $row['default_lng'];
         $base_radius_m = $row['base_radius_m'];
+        $uses_obd = (int)$row['uses_obd'];        
         
-        // las coordenadas se guardan en sessi¨®n
+        // las coordenadas se guardan en sessiï¿½ï¿½n
         $_SESSION['default_lat'] = $row['default_lat'];
         $_SESSION['default_lng'] = $row['default_lng']; 
-        $_SESSION['base_radius_m'] = $row['base_radius_m'];
+
+        $_SESSION['base_radius_m'] = $row['base_radius_m'];        
+        $_SESSION['uses_obd'] = $uses_obd;
     }
 }
 
@@ -44,5 +48,6 @@ echo json_encode([
     'user_name'   => $_SESSION['user_name'] ?? 'Usuario',
     'default_lat' => $default_lat,
     'default_lng' => $default_lng,
-    'base_radius_m' => $base_radius_m
+    'base_radius_m' => $base_radius_m,
+    'uses_obd' => $uses_obd
 ]);

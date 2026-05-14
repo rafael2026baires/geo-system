@@ -12,7 +12,7 @@ html, body {
 /* ===== Header ===== */
 header {
   padding: 10px 16px;
-  background: #2B201D;
+  background: #2B201D ;
   color: #fff;
   font-size: 18px;
   display: grid;                          /* antes: flex */
@@ -73,15 +73,16 @@ header button:hover {
 }
 /* --------------------------------- */
 
-/* ===== Sidebar izquierda ===== */
+/* =========================== Sidebar izquierda =========================== */
 #sidebar {
   position: relative;    
-  width: 600px;
+  width: 670px;
   background: #2B201D;
   color: #e5e7eb;
   padding: 12px;
   box-sizing: border-box;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #sidebar h3 {
@@ -90,6 +91,33 @@ header button:hover {
   border-bottom: 1px solid #A6A6A6;
   padding-bottom: 6px;
 }
+
+#sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 1000;
+}
+
+#sidebar-resizer:hover {
+  background: #5C5C5C;
+}
+
+#sidebar.sidebar-collapsed {
+  width: 42px !important;
+  padding-left: 0;
+  padding-right: 0;
+  overflow: hidden;
+}
+
+#sidebar.sidebar-collapsed > *:not(#sidebar-resizer) {
+  display: none;
+}
+/* ========================================================================== */
 
 /* ===== Panel interno (temporal) ===== */
 #panel {
@@ -479,12 +507,15 @@ header button:hover {
 }
 
 
-/* --------------------  CONTENEDORES  ------------------- */
+/* --------------------  RECTÁNGULOS - CONTENEDORES  ------------------- */
+
+/*
 .box {
   position: absolute;
   border: 0.5px solid #3D3D3D;
   pointer-events: none;
 }
+
 
 .box-1 {
   top: 9%;
@@ -492,17 +523,30 @@ header button:hover {
   width: 98%;
   height: 20%;
 }
+  
 
 .box-2 {
-  top: 30%;
+  top: 34.5%;
   left: 1.5%;
-  width: 98%;
-  height: 68%;
+  width: 97%;
+  height: 65%;
 }
+*/
 
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 
 .leaflet-tile {
   outline: 1px solid transparent;
+}
+
+
+/* =========================================================
+   RESPONSIVE - NOTEBOOKS CHICAS
+   ========================================================= */
+
+@media (max-width: 1400px) {
+  #sidebar {
+    width: 640px;
+  }
 }

@@ -15,12 +15,26 @@ import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag, enabl
 let TENANT_ID = null;
 let realtimeInstance = null;
 
+function getSidebarDefaultWidth() {
+  return window.AppConfig?.usesObd ? 940 : 670;
+}
+
 fetch('/session_info.php')
   .then(r => r.json())
+
   .then(cfg => {
-    TENANT_ID = cfg.tenant_id;
-    document.getElementById('userBtn').textContent = cfg.user_name + ' ▾';
-    initApp(Number(cfg.default_lat), Number(cfg.default_lng), Number(cfg.base_radius_m));
+      TENANT_ID = cfg.tenant_id;
+      window.AppConfig = {
+        usesObd: Number(cfg.uses_obd) === 1
+      };
+
+      const sidebarEl = document.getElementById('sidebar');
+      if (sidebarEl) {
+        sidebarEl.style.width = `${getSidebarDefaultWidth()}px`;
+      }
+
+      document.getElementById('userBtn').textContent = cfg.user_name + ' ▾';
+      initApp(Number(cfg.default_lat), Number(cfg.default_lng), Number(cfg.base_radius_m));
   });
 
 window.isReconnecting = false;
@@ -32,6 +46,8 @@ function getActiveUnitFromState() {
 function initApp(defaultLat, defaultLng, baseRadiusM) {
     
     const { map, replayLayer, realtimeLayer } = initMap('map', defaultLat, defaultLng, baseRadiusM); //initMap(defaultLat, defaultLng, baseRadiusM);
+    window.mainMap = map;
+
     initFloatingMap(defaultLat, defaultLng, baseRadiusM);
     enableFloatingDrag();
     enableFloatingResize();
@@ -277,7 +293,11 @@ if (userBtn && userMenu) {
   });
 }
 // ---------------------------------------------------------------------------------------
+let lastChartData = null;
+
 function renderPedidosChart(data) {  // TORTA 3D
+
+  lastChartData = data;
 
   google.charts.load('current', { packages: ['corechart'] });
   google.charts.setOnLoadCallback(() => {
@@ -354,3 +374,83 @@ function renderVehiculosChart(data) { // BARRAS 2D
 }
 window.renderVehiculosChart = renderVehiculosChart;
 // ---------------------------------------------------------------------------------------
+
+// ------------------------------------------------------------
+// SIDEBAR RESIZE MANUAL
+// ------------------------------------------------------------
+const sidebar = document.getElementById('sidebar');
+const sidebarResizer = document.getElementById('sidebar-resizer');
+
+if (sidebar && sidebarResizer) {
+  let isResizingSidebar = false;
+
+  sidebarResizer.addEventListener('mousedown', () => {
+    isResizingSidebar = true;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizingSidebar) return;
+
+    const minWidth = 50;    
+    const maxWidth = getSidebarDefaultWidth();
+
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
+
+    sidebar.style.width = `${newWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizingSidebar) return;
+
+    isResizingSidebar = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+
+    if (window.mainMap) {
+      setTimeout(() => {
+        window.mainMap.invalidateSize();
+      }, 100);
+    }
+  });
+  
+}
+
+// ------------------------------------------------------------
+// SIDEBAR COLAPSAR / RESTAURAR
+// ------------------------------------------------------------
+const toggleSidebarBtn = document.getElementById('toggleSidebar');
+
+let lastSidebarWidth = getSidebarDefaultWidth();
+
+if (toggleSidebarBtn && sidebar) {
+  toggleSidebarBtn.addEventListener('click', () => {
+
+    const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+
+    if (!isCollapsed) {
+      lastSidebarWidth = sidebar.offsetWidth;
+      sidebar.classList.add('sidebar-collapsed');
+      toggleSidebarBtn.textContent = 'Panel';
+    } else {
+      sidebar.classList.remove('sidebar-collapsed');
+      sidebar.style.width = `${lastSidebarWidth}px`;
+      toggleSidebarBtn.textContent = 'Panel';
+    }
+
+    if (window.mainMap) {
+      setTimeout(() => {
+        window.mainMap.invalidateSize();
+      }, 100);
+    }
+
+    if (lastChartData) {
+      setTimeout(() => {
+        renderPedidosChart(lastChartData);
+        renderVehiculosChart(lastChartData);
+      }, 150);
+    }
+
+  });
+}

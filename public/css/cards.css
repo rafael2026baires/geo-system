@@ -1,7 +1,26 @@
+.kpi-summary {
+  margin: 10px 0;
+  margin-left: 1%;
+  width: 100%;
+
+  border: 1px solid #3D3D3D;
+  border-radius: 6px;
+  padding: 8px;
+
+  overflow: hidden;
+}
+
 .kpi-container {
   display: flex;
   gap: 10px;
-  margin: 10px 0;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.kpi-card {
+  flex: 0 0 auto;
 }
 
 .kpi-card {
@@ -34,3 +53,27 @@
   font-size: 11px;
   opacity: 0.6;
 }
+
+/* ------------------------ Scroll horizontal de cards KPI ------------------ */
+.kpi-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.kpi-container::-webkit-scrollbar-track {
+  background: #2B201D;
+}
+
+.kpi-container::-webkit-scrollbar-thumb {
+  background: #5C5C5C;
+  border-radius: 8px;
+}
+
+.kpi-container::-webkit-scrollbar-thumb:hover {
+  background: #717171;
+}
+
+.kpi-container::-webkit-scrollbar-corner {
+  background: #2B201D;
+}
+
+/* --------------------------------------------------------------------------- */

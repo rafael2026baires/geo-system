@@ -25,8 +25,18 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$active, $tenantId, $vehicleId]);
 
+// Invalidar cache del contexto grande del tablero
+require_once __DIR__ . '/../../../config/redis.php';
+
+$redis = getRedis();
+
+if ($redis !== null) {
+    $redis->del("grid_context:" . $tenantId);
+}
+
 echo json_encode([
     'ok' => true,
     'vehicle_id' => $vehicleId,
-    'active' => $active
+    'active' => $active,
+    'grid_context_invalidated' => true
 ]);

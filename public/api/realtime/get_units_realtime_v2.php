@@ -45,83 +45,129 @@ $baseLat    = $_SESSION['default_lat'] ?? 0;
 $baseLng    = $_SESSION['default_lng'] ?? 0;
 $baseRadius = $_SESSION['base_radius_m'] ?? 100;
 $now = time();
-// -------------------------------   nuevo      ---------------------------------------
-$stmtOrders = $pdo->prepare("
-    SELECT 
-    o.id,
-    v.id as vehicle_id, 
-    o.status, 
-    o.loaded_at AS last_loaded_at, 
-    o.delivered_at AS last_delivered_at, 
-    o.lat, 
-    o.lng, 
-    v.active, 
-    d.device_uuid AS unit_id 
-    FROM vehicles v 
-    LEFT JOIN orders o ON o.vehicle_id = v.id 
-        AND o.tenant_id = v.tenant_id 
-    LEFT JOIN vehicle_devices vd ON vd.vehicle_id = v.id 
-    LEFT JOIN devices d ON d.id = vd.device_id 
-    WHERE v.tenant_id = ?;
-");
 
-$stmtOrders->execute([(int)$tenantId]);
+/*
+$gridLogFile = 'C:/xampp/htdocs/apps/geo-system/grid_context_test.log';
+function gridTestLog($msg) {
+    global $gridLogFile;
+    error_log(date('Y-m-d H:i:s') . ' ' . $msg . PHP_EOL, 3, $gridLogFile);
+}
+*/    
+// -------------------------------   nuevo      ---------------------------------------
+// ------------------------------- CONTEXTO GRID CACHEADO EN REDIS ---------------------------------------
+
 $ordersMap = [];
 $activeMap = [];
+$unitIdDbMap = [];
 
-while ($r = $stmtOrders->fetch(PDO::FETCH_ASSOC)) {
-    
-    $vehicleId = (int)$r['vehicle_id'];
-    
-    // inicialización de variables
-    if (!isset($ordersMap[$vehicleId])) {
-        $ordersMap[$vehicleId] = [
-            'A' => 0,
-            'C' => 0,
-            'E' => 0,
-            'last_loaded_at' => null,
-            'last_delivered_at' => null
-        ];
-    } 
-    
-    // coordenadas de clientes
-    if (!isset($ordersMap[$vehicleId]['clients'])) {
-        $ordersMap[$vehicleId]['clients'] = [];
-    }    
-    
-    // suma de variables 
-    $status = (int)$r['status'];
-    
-    if ($status === 20) { // ASSIGNED
-        $ordersMap[$vehicleId]['A']++;
+$gridContextKey = "grid_context:" . (int)$tenantId;
+$gridContextTtl = 3600;
+
+$gridContextLoadedFromRedis = false;
+
+if ($useRedis) {
+    $gridContextRaw = $redis->get($gridContextKey);
+
+    if ($gridContextRaw) {
+        $gridContext = json_decode($gridContextRaw, true);
+
+        if (is_array($gridContext)) {
+            $ordersMap = $gridContext['ordersMap'] ?? [];
+            $activeMap = $gridContext['activeMap'] ?? [];
+            $unitIdDbMap = $gridContext['unitIdDbMap'] ?? [];
+
+            $gridContextLoadedFromRedis = true;
+            
+            //gridTestLog("[GRID_CONTEXT_HIT] tenant={$tenantId}");
+        }
     }
-    if ($status === 30) { // LOADED
-        $ordersMap[$vehicleId]['C']++;
-    }
-    if ($status === 40) { // DELIVERED
-        $ordersMap[$vehicleId]['E']++;
-    }  
-    
-    // coordenadas de clientes
-    if ($r['lat'] && $r['lng']) {
-        $ordersMap[$vehicleId]['clients'][] = [
-            'lat' => (float)$r['lat'],
-            'lng' => (float)$r['lng'],
-            'status' => (int)$r['status']
-        ];
-    }    
-    
-    if ($r['last_loaded_at']) {
-        $ordersMap[$vehicleId]['last_loaded_at'] = $r['last_loaded_at'];
-    }
-    if ($r['last_delivered_at']) {
-        $ordersMap[$vehicleId]['last_delivered_at'] = $r['last_delivered_at'];
-    }
-    
-    $activeMap[$vehicleId] = (int)$r['active'];
-    $unitIdDbMap[$vehicleId] = $r['unit_id'];
 }
-// ---------------------------------------------------------------------------------------
+
+if (!$gridContextLoadedFromRedis) {
+
+    //gridTestLog("[GRID_CONTEXT_MISS_DB] tenant={$tenantId}");
+
+    $stmtOrders = $pdo->prepare("
+        SELECT 
+        o.id,
+        v.id as vehicle_id, 
+        o.status, 
+        o.loaded_at AS last_loaded_at, 
+        o.delivered_at AS last_delivered_at, 
+        o.lat, 
+        o.lng, 
+        v.active, 
+        d.device_uuid AS unit_id 
+        FROM vehicles v 
+        LEFT JOIN orders o ON o.vehicle_id = v.id 
+            AND o.tenant_id = v.tenant_id 
+        LEFT JOIN vehicle_devices vd ON vd.vehicle_id = v.id 
+        LEFT JOIN devices d ON d.id = vd.device_id 
+        WHERE v.tenant_id = ?;
+    ");
+
+    $stmtOrders->execute([(int)$tenantId]);
+
+    while ($r = $stmtOrders->fetch(PDO::FETCH_ASSOC)) {
+        
+        $vehicleId = (int)$r['vehicle_id'];
+        
+        if (!isset($ordersMap[$vehicleId])) {
+            $ordersMap[$vehicleId] = [
+                'A' => 0,
+                'C' => 0,
+                'E' => 0,
+                'last_loaded_at' => null,
+                'last_delivered_at' => null,
+                'clients' => []
+            ];
+        } 
+        
+        $status = (int)$r['status'];
+        
+        if ($status === 20) {
+            $ordersMap[$vehicleId]['A']++;
+        }
+
+        if ($status === 30) {
+            $ordersMap[$vehicleId]['C']++;
+        }
+
+        if ($status === 40) {
+            $ordersMap[$vehicleId]['E']++;
+        }  
+        
+        if ($r['lat'] && $r['lng']) {
+            $ordersMap[$vehicleId]['clients'][] = [
+                'lat' => (float)$r['lat'],
+                'lng' => (float)$r['lng'],
+                'status' => (int)$r['status']
+            ];
+        }    
+        
+        if ($r['last_loaded_at']) {
+            $ordersMap[$vehicleId]['last_loaded_at'] = $r['last_loaded_at'];
+        }
+
+        if ($r['last_delivered_at']) {
+            $ordersMap[$vehicleId]['last_delivered_at'] = $r['last_delivered_at'];
+        }
+        
+        $activeMap[$vehicleId] = (int)$r['active'];
+        $unitIdDbMap[$vehicleId] = $r['unit_id'];
+    }
+
+    if ($useRedis) {
+        $redis->setex($gridContextKey, $gridContextTtl, json_encode([
+            'ordersMap' => $ordersMap,
+            'activeMap' => $activeMap,
+            'unitIdDbMap' => $unitIdDbMap,
+            'totalVehicles' => count($activeMap),
+            'cached_at' => time()
+        ]));
+    }
+}
+// -------------------------------------------------------------------------------------------------------
 // DATA
 $data = RealtimePositionService::getAllUnits($tenantId);
 
@@ -168,6 +214,11 @@ foreach ($activeMap as $vehicleId => $active) {
     }  
     // --------------------------------------------------------------------------
     $redisKey = "stopped_since:$unitId";
+
+    $obdKey = "obd:$tenantId:$vehicleId";
+    $obdRaw = $useRedis ? $redis->get($obdKey) : null;
+    $obd = $obdRaw ? json_decode($obdRaw, true) : null;
+
     $stoppedSinceRedis = $useRedis ? $redis->get($redisKey) : null;    
     
     $serverTs = isset($row['server_ts']) ? (int) floor($row['server_ts'] / 1000) : null;
@@ -283,6 +334,17 @@ foreach ($activeMap as $vehicleId => $active) {
         'last_delivery_age' => $lastDeliveryAge,   
         
         'clients' => $ordersMap[$vehicleId]['clients'] ?? [],
+
+        'obd' => [
+            'fuel_level' => $obd['fuel_level'] ?? null,
+            'rpm' => $obd['rpm'] ?? null,
+            'engine_temp' => $obd['engine_temp'] ?? null,
+            'odometer' => $obd['odometer'] ?? null,
+            'battery_voltage' => $obd['battery_voltage'] ?? null,
+            'engine_on' => $obd['engine_on'] ?? null,
+            'client_ts' => $obd['client_ts'] ?? null,
+            'server_ts' => $obd['server_ts'] ?? null
+        ],        
         
         // --- OPCIONAL (NO ahora, pero ya definido)
         //'next_trip_orders' => $nextTripCount   
