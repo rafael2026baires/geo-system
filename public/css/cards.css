@@ -1,6 +1,6 @@
 .kpi-summary {
   margin: 10px 0;
-  margin-left: 1%;
+  margin-left: 0.5%;
   width: 100%;
 
   border: 1px solid #3D3D3D;
@@ -8,6 +8,7 @@
   padding: 8px;
 
   overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .kpi-container {

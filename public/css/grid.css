@@ -4,7 +4,7 @@
 
 .grid-summary {
   margin-top: 10px;
-  margin-left: 1%;
+  margin-left: 0.5%;
   width: 100%;
 
   border: 1px solid #3D3D3D;
@@ -12,12 +12,14 @@
   padding: 8px;
 
   overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 #grid-new {
   font-size: 12px;
 
-  max-height: 59Vh;
+  max-height: 58Vh;
   overflow-y: auto;  
 
   max-width: 100%;
