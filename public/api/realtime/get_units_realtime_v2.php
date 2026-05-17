@@ -46,13 +46,13 @@ $baseLng    = $_SESSION['default_lng'] ?? 0;
 $baseRadius = $_SESSION['base_radius_m'] ?? 100;
 $now = time();
 
-/*
+
 $gridLogFile = 'C:/xampp/htdocs/apps/geo-system/grid_context_test.log';
 function gridTestLog($msg) {
     global $gridLogFile;
     error_log(date('Y-m-d H:i:s') . ' ' . $msg . PHP_EOL, 3, $gridLogFile);
 }
-*/    
+  
 // -------------------------------   nuevo      ---------------------------------------
 // ------------------------------- CONTEXTO GRID CACHEADO EN REDIS ---------------------------------------
 
@@ -85,7 +85,7 @@ if ($useRedis) {
 
 if (!$gridContextLoadedFromRedis) {
 
-    //gridTestLog("[GRID_CONTEXT_MISS_DB] tenant={$tenantId}");
+    gridTestLog("[GRID_CONTEXT_MISS_DB] tenant={$tenantId}");
 
     $stmtOrders = $pdo->prepare("
         SELECT 
