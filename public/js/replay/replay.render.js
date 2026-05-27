@@ -26,7 +26,7 @@ export function renderReplayRoute(target, points) {
 }
 
 
-export function createReplayMarker(target, firstPoint) {
+export function createVehicleMarker(target, firstPoint) {
   replayMarker = L.circleMarker(
     [firstPoint.lat, firstPoint.lng],
     { radius: 8, color: 'blue' }

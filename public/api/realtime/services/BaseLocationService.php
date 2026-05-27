@@ -34,7 +34,7 @@ class BaseLocationService
             $baseLng
         );
 
-        return $distance > ($baseRadius + 15);
+        return $distance > ($baseRadius); // + 13
     }
 
     /**

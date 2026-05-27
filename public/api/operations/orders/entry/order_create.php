@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../../../../services/CacheInvalidationService.php';
 
 try {
 
@@ -104,6 +105,8 @@ try {
 
     $orderId = $pdo->lastInsertId();
 
+    $place_id = $place_id ?: null;
+
     // guardar dirección si no existe
     $stmt = $pdo->prepare("
         INSERT INTO customer_addresses (
@@ -125,9 +128,9 @@ try {
             SELECT 1
             FROM customer_addresses
             WHERE tenant_id = ?
-              AND customer_id = ?
-              AND address = ?
-              AND place_id = ?
+            AND customer_id = ?
+            AND lat = ?
+            and lng = ?
         )
     ");
     
@@ -141,14 +144,16 @@ try {
         $place_id,
         $city,
         $state,
-        $country,
+        $country,  
+         
         $tenantId,
         $customerId,
-        $address,
-        $place_id
+        $lat,
+        $lng     
     ]);
 
     $pdo->commit();
+    CacheInvalidationService::gridContext($tenantId);
 
     json_ok([
         'order_id' => $orderId,

@@ -1,15 +1,22 @@
-let followedUnitId = null; // unitId currently followed by camera
+import { highlightUnitMarkerById } from './map.marker.highlight.js';
+
+let followedUnitId = null; 
 let mapRef = null;
 let markersRef = null;
 let mode = 'IDLE'; // IDLE | FOLLOW
 
-// init desde realtime
 export function initCameraControl({ map, markers }) {
   mapRef = map;
   markersRef = markers;
 }
 
-// acciones
+export function highlightUnitMarker(unitId) {
+  highlightUnitMarkerById({
+    unitId,
+    markers: markersRef
+  });
+}
+
 export function focusUnit(unitId) {
   if (!markersRef) return;
 
@@ -32,7 +39,6 @@ export function stopFollow() {
   updateFollowIndicator();
 }
 
-// usado desde RAF
 let lastLat = null;
 let lastLng = null;
 
@@ -49,7 +55,6 @@ export function updateFollow() {
   const p = marker.getLatLng();
   if (!p) return;
 
-  // 🔹 evitar render innecesario
   if (p.lat === lastLat && p.lng === lastLng) return;
 
   lastLat = p.lat;

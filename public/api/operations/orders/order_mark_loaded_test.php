@@ -1,7 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../../bootstrap.php';
-require_once __DIR__ . '/../../../services/ResourceSuggestionService.php';
+require_once __DIR__ . '/../../../../services/ResourceSuggestionService.php';
+require_once __DIR__ . '/../../../../services/CacheInvalidationService.php';
 
 try {
 
@@ -232,7 +233,8 @@ try {
         $driverIdFinal, $driverIdFinal
     ]);
 
-    $pdo->commit();
+    $pdo->commit();    
+    CacheInvalidationService::gridContext($tenantId);
 
     json_ok([]);
 

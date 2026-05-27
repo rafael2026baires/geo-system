@@ -65,6 +65,23 @@ export function initMap(containerId, defaultLat, defaultLng, baseRadiusM) {
     // -------------------------------------------------------------------------------------------------------   
     baseLayer.addTo(map);
     
+    // ----- visualización de zoon para prueba -------------------------------
+    /*
+    const zoomDebug = L.control({ position: 'topright' });
+    zoomDebug.onAdd = function () {
+      const div = L.DomUtil.create('div', 'zoom-debug');
+      div.innerHTML = `Zoom: ${map.getZoom()}`;
+      return div;
+    };
+    zoomDebug.addTo(map);
+
+    map.on('zoomend', () => {
+      document.querySelector('.zoom-debug').innerHTML = `Zoom: ${map.getZoom()}`;
+    });
+    // en styles.css .zoom-debug {.....
+    */
+    // -----------------------------------------------------------------------
+    
     L.circle([defaultLat, defaultLng], { 
       pane: 'circlePane',    
       radius: baseRadiusM,

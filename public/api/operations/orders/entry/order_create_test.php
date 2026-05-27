@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../../../../services/CacheInvalidationService.php';
 
 try {
 
@@ -118,9 +119,9 @@ try {
             SELECT 1
             FROM customer_addresses
             WHERE tenant_id = ?
-              AND customer_id = ?
-              AND address = ?
-              AND place_id = ?
+            AND customer_id = ?
+            AND lat = ?
+            and lng = ?
         )
     ");
     
@@ -134,14 +135,16 @@ try {
         $place_id,
         $city,
         $state,
-        $country,
+        $country,  
+         
         $tenantId,
         $customerId,
-        $address,
-        $place_id
+        $lat,
+        $lng 
     ]);
 
     $pdo->commit();
+    CacheInvalidationService::gridContext($tenantId);
 
     json_ok([
         'order_id' => $orderId,
@@ -155,6 +158,6 @@ try {
         $pdo->rollBack();
     }
 
-    json_error('Error interno');
+    json_error('Error interno: ' . $e->getMessage());
 
 }

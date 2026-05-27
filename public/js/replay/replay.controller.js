@@ -1,5 +1,5 @@
 import { loadReplayData } from './replay.service.js';
-import { clearReplay, renderReplayRoute, createReplayMarker } from './replay.render.js';
+import { clearReplay, renderReplayRoute, createVehicleMarker } from './replay.render.js';
 import { startReplayAnimation, stopReplayAnimation } from './replay.anim.js';
 
 import { computeState } from '../common/state.engine.js';
@@ -25,13 +25,13 @@ export function startReplay({
     if (!points || !points.length) return;
 
     const route = renderReplayRoute(layer, points);
-    const marker = createReplayMarker(layer, points[0]);
+    const marker = createVehicleMarker(layer, points[0]);
 
     let lastPoint = null;
     let stoppedSince = null;
     let lastDataAt = Date.now();
 
-    // ©¤©¤ Estado inicial (primer punto)
+    // ï¿½ï¿½ï¿½ï¿½ Estado inicial (primer punto)
     const first = {
       lat: points[0].lat,
       lng: points[0].lng,
@@ -49,7 +49,7 @@ export function startReplay({
 
     if (onStatusChange) onStatusChange(initState.state);
 
-    // ©¤©¤ Animaci¨®n + estados por tramo
+    // ï¿½ï¿½ï¿½ï¿½ Animaciï¿½ï¿½n + estados por tramo
     startReplayAnimation({
       map,
       marker,

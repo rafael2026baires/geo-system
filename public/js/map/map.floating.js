@@ -1,83 +1,103 @@
 import { stopFollow } from './map.camera.control.js';
 import { initMap } from './map.init.js';
-import { createReplayMarker } from '../common/helpers.js';
+import { createVehicleMarker, updateVehicleMarkerSize } from '../common/helpers.js';
 import { updateOrientation } from '../realtime/orientation.engine.js';
+import { UnitMotion } from '../realtime/unit.motion.js';
+import {
+  getFloatingState,
+  saveFloatingStatePatch,
+  loadFloatingBoxState,
+  saveFloatingBoxState
+} from './map.floating.state.js';
+import { enableFloatingDragBehavior } from './map.floating.drag.js';
+import { enableFloatingResizeBehavior } from './map.floating.resize.js';
+import { clearUnitMarkerHighlight } from './map.marker.highlight.js';
 
 let floatingMap = null;
 
 let floatingMarker = null;
+let floatingMotion = null;
+let lastFloatingServerPoint = null;
 let activeUnitId = null;
-
-let isDragging = false;
-let offsetX = 0;
-let offsetY = 0;
-
-let isResizing = false;
 
 let lastPoint = null;
 
-// ---------------------  PERSISTENCIA ----------------------------------------
-const STORAGE_KEY = 'floating_state';
+const FLOATING_ANIMATION_MIN_ZOOM = 15;
 
-function saveState(el) {
-  if (!el) return;
-
-  const state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-
-  state.left = el.style.left;
-  state.top = el.style.top;
-  state.width = el.style.width;
-  state.height = el.style.height;
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function closeFocusPanelArea() {
+  const focusPanel = document.getElementById('focus-panel');
+  if (focusPanel) focusPanel.style.height = '0px';
 }
 
-function loadState(el) {
-  if (!el) return;
+function showDetachedFocusMessage() {
+  const emptyMessage = document.getElementById('focus-empty-message');
+  if (!emptyMessage) return;
 
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-
-  try {
-    const state = JSON.parse(raw);
-
-    if (state.left) el.style.left = state.left;
-    if (state.top) el.style.top = state.top;
-    if (state.width) el.style.width = state.width;
-    if (state.height) el.style.height = state.height;
-
-    el.style.right = 'auto';
-    el.style.bottom = 'auto';
-  } catch (e) {}
+  emptyMessage.classList.remove('hidden');
+  emptyMessage.innerHTML = `
+    <div class="focus-empty-title">Foco desacoplado</div>
+    <div class="focus-empty-text">
+      El seguimiento está abierto en ventana flotante.
+    </div>
+  `;
 }
-// -----------------------------------------------------------------------------
+
+function shouldAnimateFloatingByZoom() {
+  return floatingMap && floatingMap.getZoom() >= FLOATING_ANIMATION_MIN_ZOOM;
+}
+
+
 
 export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     const container = document.getElementById('floating-map');
-    if (!container) return;
-    
-    //const res = initMap(defaultLat, defaultLng, baseRadiusM);
+    if (!container) return;    
+
     const res = initMap('floating-map', defaultLat, defaultLng, baseRadiusM);
     
     floatingMap = res.map;
+    floatingMap.setMinZoom(15);
   
     floatingMap.on('zoomend', () => {
-      const state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-      state.zoom = floatingMap.getZoom();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!activeUnitId) return;
+
+      saveFloatingStatePatch({
+        zoom: floatingMap.getZoom()
+      });
+
+      updateVehicleMarkerSize(floatingMarker, floatingMap.getZoom());
     });  
 }
 
 export function openFloating(unitId) {
     activeUnitId = unitId;
     
-    stopFollow();  
-    
+    stopFollow();    
+
+    const focusPanel = document.getElementById('focus-panel');
+    const emptyMessage = document.getElementById('focus-empty-message');
+
     const el = document.getElementById('floating-map');
+    const isDetached = el?.classList.contains('floating-detached');    
+
+    if (focusPanel) {
+        focusPanel.classList.add('focus-panel-open');
+
+        if (isDetached) {
+            closeFocusPanelArea();
+        } else if (!focusPanel.style.height || focusPanel.style.height === '0px') {
+            const state = getFloatingState();
+            focusPanel.style.height = state.attachedHeight || '260px';
+        }
+    }
+
+    if (isDetached) {
+        showDetachedFocusMessage();
+    } else if (emptyMessage) {
+        emptyMessage.classList.add('hidden');
+    }
     if (el) {
         el.classList.remove('hidden');
-        loadState(el);
-    }
+    }  
     
     const label = document.getElementById('floating-label');
     if (label) {
@@ -94,14 +114,9 @@ export function openFloating(unitId) {
           floatingMap.invalidateSize();
 
           // 🔴 DESPUÉS aplicar zoom
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            try {
-              const state = JSON.parse(raw);
-              if (state.zoom) {
-                floatingMap.setZoom(state.zoom);
-              }
-            } catch (e) {}
+          const state = getFloatingState();
+          if (state.zoom) {
+            floatingMap.setZoom(state.zoom);
           }
         }
     }, 0);
@@ -109,11 +124,15 @@ export function openFloating(unitId) {
 
 export function closeFloating() {
     activeUnitId = null;
+    clearUnitMarkerHighlight();
     
     if (floatingMarker) {
         floatingMap.removeLayer(floatingMarker);
         floatingMarker = null;
     }
+    floatingMotion = null;
+    lastFloatingServerPoint = null;    
+
     const el = document.getElementById('floating-map');
     if (el) el.classList.add('hidden');
     
@@ -122,147 +141,95 @@ export function closeFloating() {
       label.classList.add('hidden');
     }  
     lastPoint = null;
+
+    const focusPanel = document.getElementById('focus-panel');
+    const emptyMessage = document.getElementById('focus-empty-message');
+
+    if (focusPanel) {
+      focusPanel.style.height = '0px';
+    }
+
+    if (emptyMessage) {
+      emptyMessage.classList.remove('hidden');
+      emptyMessage.innerHTML = `
+        <div class="focus-empty-title">Sin vehículo en foco</div>
+        <div class="focus-empty-text">
+          Seleccione un vehículo de la grilla para iniciar seguimiento.
+        </div>
+      `;
+    }
 }
 
-export function updateFloating(markersRef) {
+export function updateFloating(markersRef, dt = 0) {  
+
   if (!floatingMap || !activeUnitId) return;
 
   const marker = markersRef.get(activeUnitId);
   if (!marker) return;
 
-  const p = marker.getLatLng();
+  //const p = marker.getLatLng();
+  const p = marker.__lastPoint || marker.getLatLng();
   if (!p) return;
 
   // crear marker si no existe
-  if (!floatingMarker) {
-    floatingMarker = createReplayMarker(floatingMap, p);
+  if (!floatingMarker) {    
+    floatingMarker = createVehicleMarker(floatingMap, p, floatingMap.getZoom());
+
+    floatingMotion = new UnitMotion(floatingMarker);
+    floatingMotion.setInitialPoint(p);
+    lastFloatingServerPoint = p;
+
     lastPoint = p;
+    floatingMap.panTo(p, { animate: false });
     return;
   }
 
-  // mover marker
-  floatingMarker.setLatLng(p);
+  const isNewPoint =
+    !lastFloatingServerPoint ||
+    lastFloatingServerPoint.lat !== p.lat ||
+    lastFloatingServerPoint.lng !== p.lng;
 
-  // ORIENTACIÓN (igual al mapa principal)
-  updateOrientation({
-    marker: floatingMarker,
-    lastPoint: lastPoint,
-    currPoint: p,
-    state: 'MOVING'
-  });
+  if (isNewPoint) {
+    if (shouldAnimateFloatingByZoom()) {
+      floatingMotion.applyServerPoint(p);
+    } else {
+      floatingMotion.snapTo(p);
+    }
 
-  // guardar punto anterior
-  lastPoint = p;
+    updateOrientation({
+      marker: floatingMarker,
+      lastPoint: lastPoint,
+      currPoint: p,
+      state: (lastPoint && (lastPoint.lat !== p.lat || lastPoint.lng !== p.lng)) ? 'MOVING' : 'STOPPED'
+    });
 
-  // centrar mapa
-  floatingMap.panTo(p, { animate: false });
+    lastPoint = p;
+    lastFloatingServerPoint = p;
+  }
+
+  if (floatingMotion && shouldAnimateFloatingByZoom()) {
+    floatingMotion.tick(dt);
+  }
+
+  floatingMap.panTo(floatingMarker.getLatLng(), { animate: false });
 }
 
 export function enableFloatingDrag() {
-    const el = document.getElementById('floating-map');
-    if (!el) return;
-    
-    el.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    offsetX = e.clientX - el.offsetLeft;
-    offsetY = e.clientY - el.offsetTop;
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    
-    el.style.left = (e.clientX - offsetX) + 'px';
-    el.style.top = (e.clientY - offsetY) + 'px';
-    el.style.right = 'auto';
-    el.style.bottom = 'auto';
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (isDragging) {
-        saveState(el); // 🔴 guardar posición
-      }
-      isDragging = false;
-    });
+  enableFloatingDragBehavior({
+    getElement: () => document.getElementById('floating-map'),
+    onSave: saveFloatingBoxState
+  });
 }
 
 export function enableFloatingResize() {
-    
-  const el = document.getElementById('floating-map');
-  const corner = el?.querySelector('.floating-resize');
-  const left = el?.querySelector('.resize-left');
-  const right = el?.querySelector('.resize-right');
-  const bottom = el?.querySelector('.resize-bottom');
-  if (!el) return;
-
-  let mode = null;
-
-  // --- MOUSEDOWN ---
-  corner?.addEventListener('mousedown', (e) => {
-    mode = 'corner';
-    isResizing = true;
-    e.stopPropagation();
-  });
-
-  left?.addEventListener('mousedown', (e) => {
-    mode = 'left';
-    isResizing = true;
-    e.stopPropagation();
-  });
-  
-  right?.addEventListener('mousedown', (e) => {
-    mode = 'right';
-    isResizing = true;
-    e.stopPropagation();
-  });
-
-  bottom?.addEventListener('mousedown', (e) => {
-    mode = 'bottom';
-    isResizing = true;
-    e.stopPropagation();
-  });
-
-  // --- MOUSEMOVE ---
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizing) return;
-
-    const rect = el.getBoundingClientRect();
-
-    if (mode === 'corner') {
-      const w = e.clientX - rect.left;
-      const h = e.clientY - rect.top;
-
-      if (w > 150) el.style.width = w + 'px';
-      if (h > 100) el.style.height = h + 'px';
+  enableFloatingResizeBehavior({
+    getElement: () => document.getElementById('floating-map'),
+    onSave: saveFloatingBoxState,
+    onResize: () => {
+      requestAnimationFrame(() => {
+        refreshFloatingMapView();
+      });
     }
-    
-    if (mode === 'left') {
-      const dx = rect.left - e.clientX;
-      const newWidth = rect.width + dx;
-    
-      if (newWidth > 150) {
-        el.style.width = newWidth + 'px';
-        el.style.left = (el.offsetLeft - dx) + 'px';
-      }
-    }    
-
-    if (mode === 'right') {
-      const w = e.clientX - rect.left;
-      if (w > 150) el.style.width = w + 'px';
-    }
-
-    if (mode === 'bottom') {
-      const h = e.clientY - rect.top;
-      if (h > 100) el.style.height = h + 'px';
-    }
-  });
-
-  // --- MOUSEUP ---
-  document.addEventListener('mouseup', () => {
-    if (isResizing) {
-      saveState(el);
-    }
-    isResizing = false;
-    mode = null;
   });
 }
 
@@ -272,6 +239,9 @@ export function enableFloatingClose() {
     
     btn.addEventListener('click', () => {
     closeFloating();
+        requestAnimationFrame(() => {
+      window.mainMap?.invalidateSize();
+    });
     
     if (window.AppState) {
       window.AppState.activeUnitId = null;
@@ -281,4 +251,71 @@ export function enableFloatingClose() {
     stopFollow();
     
     });
+}
+
+export function enableFloatingDetach() {
+
+  const btn = document.getElementById('floating-detach');
+  const el = document.getElementById('floating-map');
+
+  if (!btn || !el) return;
+
+  btn.addEventListener('click', () => {
+    const willDetach = !el.classList.contains('floating-detached');
+
+    if (willDetach) {
+      el.classList.add('floating-detached');
+
+      loadFloatingBoxState(el);
+
+      const focusPanel = document.getElementById('focus-panel');
+      const emptyMessage = document.getElementById('focus-empty-message');
+      
+      closeFocusPanelArea();
+      showDetachedFocusMessage();      
+
+      btn.textContent = '⇲';
+      btn.title = 'Acoplar ventana';
+    } else {
+      el.classList.remove('floating-detached');
+
+      const focusPanel = document.getElementById('focus-panel');
+      const emptyMessage = document.getElementById('focus-empty-message');
+
+      if (focusPanel) {
+          const state = getFloatingState();
+          focusPanel.style.height = state.attachedHeight || '260px';
+      }
+
+      if (emptyMessage) {
+        emptyMessage.classList.add('hidden');
+      }      
+
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+
+      btn.textContent = '⇱';
+      btn.title = 'Desacoplar ventana';
+    }
+
+    requestAnimationFrame(() => {
+      window.mainMap?.invalidateSize();
+      refreshFloatingMapView();
+    });
+  });
+
+}
+
+export function refreshFloatingMapView() {
+  if (!floatingMap) return;
+
+  floatingMap.invalidateSize();
+
+  if (floatingMarker) {
+    floatingMap.panTo(floatingMarker.getLatLng(), { animate: false });
+  }
 }

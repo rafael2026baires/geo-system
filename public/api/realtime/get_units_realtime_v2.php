@@ -24,6 +24,7 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/services/TechStateService.php';
 require_once __DIR__ . '/services/RealtimePositionService.php';
 require_once __DIR__ . '/services/BaseLocationService.php';
+require_once __DIR__ . '/services/ClientZoneService.php';
 
 $config = require __DIR__ . '/../../../config/tech_state.php';
 $techService = new TechStateService($config);
@@ -35,6 +36,10 @@ $useRedis = $redis !== null;
 session_start();
 
 $tenantId = $_SESSION['tenant_id'] ?? null;
+$filterVehicleId = isset($_GET['vehicle_id'])
+    ? (int)$_GET['vehicle_id']
+    : null;
+
 
 if (!$tenantId) {
     echo json_encode(['units' => []]);
@@ -97,7 +102,9 @@ if (!$gridContextLoadedFromRedis) {
         o.lat, 
         o.lng, 
         v.active, 
-        d.device_uuid AS unit_id 
+        d.device_uuid AS unit_id,
+        company_id,
+        customer_id 
         FROM vehicles v 
         LEFT JOIN orders o ON o.vehicle_id = v.id 
             AND o.tenant_id = v.tenant_id 
@@ -139,9 +146,11 @@ if (!$gridContextLoadedFromRedis) {
         
         if ($r['lat'] && $r['lng']) {
             $ordersMap[$vehicleId]['clients'][] = [
-                'lat' => (float)$r['lat'],
-                'lng' => (float)$r['lng'],
-                'status' => (int)$r['status']
+              'lat' => (float)$r['lat'],
+              'lng' => (float)$r['lng'],
+              'status' => (int)$r['status'],
+              'company_id' => isset($r['company_id']) ? (int)$r['company_id'] : null,
+              'customer_id' => isset($r['customer_id']) ? (int)$r['customer_id'] : null
             ];
         }    
         
@@ -179,6 +188,10 @@ $units = [];
 
 
 foreach ($activeMap as $vehicleId => $active) {
+
+if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
+    continue;
+}
     
     $row = [];
 
@@ -195,13 +208,16 @@ foreach ($activeMap as $vehicleId => $active) {
     $lat = $row['lat'] ?? null;
     $lng = $row['lng'] ?? null;
     
-    $enBase = false;
-    $enCliente = false;
+    //$enBase = false;
+    //$enCliente = false;
     
     $unitId = $unitIdDbMap[$vehicleId] ?? null;
     if (!$unitId) continue; 
     // ---------------------------- nuevo  -------------------------------------
     $enBase = false;
+    $enCliente = false;
+    $distanceToClientM = null;
+
     if ($lat !== null && $lng !== null && $baseLat && $baseLng) {
         $fuera = BaseLocationService::isFueraDeBase(
             (float)$lat,
@@ -211,6 +227,17 @@ foreach ($activeMap as $vehicleId => $active) {
             (float)$baseRadius
         );
         $enBase = !$fuera;
+    }
+
+    if (!$enBase && $lat !== null && $lng !== null) {
+        $clientZone = ClientZoneService::resolve(
+            (float)$lat,
+            (float)$lng,
+            $ordersMap[$vehicleId]['clients'] ?? [],
+            70
+        );
+        $enCliente = $clientZone['in_client'];
+        $distanceToClientM = $clientZone['distance_to_client_m'];
     }  
     // --------------------------------------------------------------------------
     $redisKey = "stopped_since:$unitId";
@@ -317,6 +344,7 @@ foreach ($activeMap as $vehicleId => $active) {
         'in_street' => !$enBase && !$enCliente,
         'in_client' => $enCliente && !$enBase,
         'state' => $enBase ? 'base' : ($enCliente ? 'client' : 'street'),
+        'distance_to_client_m' => $distanceToClientM,
         
          // --- TIEMPOS DE ESTADO (BASE / CALLE)        
         'state_since' => $serverTs,
@@ -355,6 +383,7 @@ foreach ($activeMap as $vehicleId => $active) {
 function resolveSection($u) {
     if ($u['active'] !== 1) return 'inactive';
     if ($u['in_base']) return 'base';
+    if ($u['in_client']) return 'client';
     return 'trip';
 }
 // ------------------------------------------------------------------
@@ -367,21 +396,17 @@ $summary = [
 
 foreach ($units as $u) {
     $s = resolveSection($u);
+
     if ($s === 'inactive') {
         $summary['inactive']++;
     } else if ($s === 'base') {
         $summary['idle']++;
+    } else if ($s === 'client') {
+        $summary['client']++;
     } else if ($s === 'trip') {
         $summary['delivering']++;
     }
 }
-
-/*
-$summary['idle'] = 5;
-$summary['delivering'] = 15;
-$summary['client'] = 10;
-*/
-
 // ------------------------------------------------------------------
 $ordersSummary = [
     'A' => 0,

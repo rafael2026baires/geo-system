@@ -1,16 +1,20 @@
-import { animateMove, pollLastPoint, createReplayMarker, clearReplay } from './common/helpers.js';
+import { animateMove, pollLastPoint, createVehicleMarker, clearReplay } from './common/helpers.js';
 import { loadFleetFromDB } from './fleet/fleet.data.js';
 import { initMap } from './map/map.init.js';
 import { createModeHandlers } from './modes/modes.handlers.js';
 import { wireUI } from './ui/ui.wiring.js';
 import { AppState } from './state/unit.state.js';
 window.AppState = AppState; // TEMP global for UI sync (sidebar)
-AppState.mode = 'MAP';
+AppState.mode = 'FLOATING';
+AppState.mainViewMode = 'FIT_ALL';
 import { upsertFleetState, fleetStateStore} from './fleet/fleet.state.store.mjs';
 import { initViewport } from './map/viewport.controller.js';
 import { runRealtimeV2 } from './realtime/realtime.simple.v2.js';
 import { stopFollow, onUserMove, focusUnit, followUnit } from './map/map.camera.control.js';
-import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag, enableFloatingResize, enableFloatingClose } from './map/map.floating.js';
+import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag, 
+         enableFloatingResize, enableFloatingClose, enableFloatingDetach, refreshFloatingMapView } 
+         from './map/map.floating.js';
+import { saveFloatingStatePatch } from './map/map.floating.state.js';         
 
 let TENANT_ID = null;
 let realtimeInstance = null;
@@ -52,6 +56,7 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
     enableFloatingDrag();
     enableFloatingResize();
     enableFloatingClose();
+    enableFloatingDetach();
     
     if (realtimeInstance) {
       realtimeInstance.stop();
@@ -124,6 +129,7 @@ const initialViewportTimer = setInterval(() => {
         }
     
         if (window.AppState?.mode === 'FLOATING') {
+          AppState.mainViewMode = 'FIT_ALL';
           viewport.fitAllNow(); // solo reencuadra mapa
         }
     
@@ -217,6 +223,7 @@ const initialViewportTimer = setInterval(() => {
       }
     
       if (window.AppState?.mode === 'FLOATING') {
+        AppState.mainViewMode = 'MANUAL';
         viewport.onUserMovedMap(); // solo mover mapa
       }
     
@@ -238,7 +245,7 @@ const initialViewportTimer = setInterval(() => {
       startRealtimeMulti: () => {},
       pollLastPoint,
       animateMove,
-      createReplayMarker,
+      createVehicleMarker,
       clearReplay,
       getRealtimeMulti: () => null
     });    
@@ -331,7 +338,7 @@ function renderPedidosChart(data) {  // TORTA 3D
       legend: 'none',
       chartArea: { width: '90%', height: '85%' },
       pieStartAngle: 100,
-      colors: total === 0 ? ['#555555'] : ['#787777', '#BAB7B6', '#195AB0']
+      colors: total === 0 ? ['#261C1A'] : ['#787777', '#BAB7B6', '#195AB0']
     });
   });
 }
@@ -382,39 +389,41 @@ const sidebar = document.getElementById('sidebar');
 const sidebarResizer = document.getElementById('sidebar-resizer');
 
 if (sidebar && sidebarResizer) {
-  let isResizingSidebar = false;
+    let isResizingSidebar = false;
 
-  sidebarResizer.addEventListener('mousedown', () => {
-    isResizingSidebar = true;
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-  });
+    sidebarResizer.addEventListener('mousedown', () => {
+      isResizingSidebar = true;
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    });
 
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizingSidebar) return;
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizingSidebar) return;
 
-    const minWidth = 50;    
-    const maxWidth = getSidebarDefaultWidth();
+      const minWidth = 50;    
+      const maxWidth = getSidebarDefaultWidth();
 
-    const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
 
-    sidebar.style.width = `${newWidth}px`;
-  });
+      sidebar.style.width = `${newWidth}px`;
 
-  document.addEventListener('mouseup', () => {
-    if (!isResizingSidebar) return;
+      refreshMainMapView();
+      refreshFloatingMapView();
+    });
 
-    isResizingSidebar = false;
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
+    document.addEventListener('mouseup', () => {
+      if (!isResizingSidebar) return;
 
-    if (window.mainMap) {
+      isResizingSidebar = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
       setTimeout(() => {
-        window.mainMap.invalidateSize();
+        refreshMainMapView();
+        refreshFloatingMapView();
       }, 100);
-    }
-  });
-  
+
+    });  
 }
 
 // ------------------------------------------------------------
@@ -439,11 +448,10 @@ if (toggleSidebarBtn && sidebar) {
       toggleSidebarBtn.textContent = 'Panel';
     }
 
-    if (window.mainMap) {
-      setTimeout(() => {
-        window.mainMap.invalidateSize();
-      }, 100);
-    }
+    setTimeout(() => {
+      refreshMainMapView();
+      refreshFloatingMapView();
+    }, 100);    
 
     if (lastChartData) {
       setTimeout(() => {
@@ -453,4 +461,71 @@ if (toggleSidebarBtn && sidebar) {
     }
 
   });
+}
+
+// ------------------------------------------------------------
+// FOCUS PANEL RESIZE VERTICAL
+// ------------------------------------------------------------
+const focusPanel = document.getElementById('focus-panel');
+const focusResizer = document.getElementById('focus-resizer');
+
+if (focusPanel && focusResizer) {
+  let isResizingFocus = false;
+
+  focusResizer.addEventListener('mousedown', () => {
+    isResizingFocus = true;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizingFocus) return;
+
+    const layoutTop = document.getElementById('layout').getBoundingClientRect().top;
+    const layoutHeight = document.getElementById('layout').offsetHeight;
+
+    const mouseY = e.clientY - layoutTop;
+    const focusHeight = layoutHeight - mouseY;
+
+    const minFocusHeight = 0;
+    const maxFocusHeight = Math.floor(layoutHeight * 0.55);
+
+    const newHeight = Math.max(
+      minFocusHeight,
+      Math.min(maxFocusHeight, focusHeight)
+    );
+
+    focusPanel.style.height = `${newHeight}px`;
+    saveFloatingStatePatch({ attachedHeight: `${newHeight}px` });
+
+    refreshMainMapView();
+    refreshFloatingMapView();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizingFocus) return;
+
+    isResizingFocus = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+
+    saveFloatingStatePatch({ attachedHeight: focusPanel.style.height });
+
+    refreshMainMapView();
+    refreshFloatingMapView();
+
+  });
+}
+
+function refreshMainMapView() {
+  if (!window.mainMap) return;
+
+  window.mainMap.invalidateSize();
+
+  if (
+    window.AppState?.mainViewMode === 'FIT_ALL' &&
+    window.viewport
+  ) {
+    window.viewport.fitAllNow();
+  }
 }

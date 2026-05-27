@@ -1,4 +1,4 @@
-import { focusUnit, followUnit } from '../map/map.camera.control.js';
+import { focusUnit, followUnit, highlightUnitMarker } from '../map/map.camera.control.js';
 import { openFloating, closeFloating } from '../map/map.floating.js';
 
 export function syncGridSelection() {
@@ -13,6 +13,19 @@ export function syncGridSelection() {
   });
 }
 
+function setActiveUnit(unitId) {
+  if (window.AppState) {
+    window.AppState.activeUnitId = unitId;
+  }
+
+  syncGridSelection();
+  highlightUnitMarker(unitId);
+}
+
+function handleGridUnitAction(unitId) {
+  openFloating(unitId);
+}
+
 export function bindGridEvents(container) {
   if (!container || container.dataset.gridEventsBound === '1') return;
 
@@ -25,21 +38,9 @@ export function bindGridEvents(container) {
     const unitId = el.dataset.unit;
     if (!unitId) return;
 
-    if (window.AppState) {
-      window.AppState.activeUnitId = unitId;
-    }
+    setActiveUnit(unitId);
+    handleGridUnitAction(unitId);
 
-    syncGridSelection();
-
-    if (window.AppState?.mode === 'MAP') {
-      focusUnit(unitId);
-      followUnit(unitId);
-      closeFloating();
-    }
-
-    if (window.AppState?.mode === 'FLOATING') {
-      openFloating(unitId);
-    }
   });
 }
 

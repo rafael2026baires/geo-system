@@ -28,9 +28,11 @@
     <!-- <button id="btnReplay">▶ Replay</button> -->     
     <button id="btnFitAll" class="btn-fit-all">Ver todas</button>
     <button id="toggleSidebar">Panel</button>
+    <!--
     <button id="modeMap">Mapa</button>
     <button id="modeFloating">Ventana</button>
     <span id="modeLabel">Modo: Mapa</span>
+    -->
    </div>  
   
     <div id="userBox">
@@ -119,17 +121,35 @@
     <div class="grid-summary">
        <div id="grid-new"></div>
     </div>
-    </aside>
-    
-    <div id="map"></div>
-    <div id="floating-map" class="floating-map hidden">
-      <button id="floating-close">✕</button>
-      <span id="floating-label" class="floating-label hidden"></span>
-      <div class="resize-left"></div>
-      <div class="resize-right"></div>
-      <div class="resize-bottom"></div>
-      <div class="floating-resize"></div>   
-    </div>    
+    </aside> 
+  
+
+    <div id="map-workspace">
+
+      <div id="map"></div>
+      <div id="focus-resizer"></div>
+
+      <section id="focus-panel" class="focus-panel focus-panel-empty">
+        <div id="focus-empty-message">
+          <div class="focus-empty-title">Sin vehículo en foco</div>
+          <div class="focus-empty-text">
+            Seleccione un vehículo de la grilla para iniciar seguimiento.
+          </div>
+        </div>
+
+        <div id="floating-map" class="floating-map hidden">
+          <button id="floating-close">✕</button>
+          <button id="floating-detach" class="floating-detach" title="Desacoplar ventana">⇱</button>
+          <span id="floating-label" class="floating-label hidden"></span>
+          <div class="resize-left"></div>
+          <div class="resize-right"></div>
+          <div class="resize-bottom"></div>
+          <div class="floating-resize"></div>   
+        </div>
+      </section>
+
+    </div>
+
   
 </div>
 

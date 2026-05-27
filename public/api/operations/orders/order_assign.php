@@ -9,6 +9,7 @@ SUPERSEDED = 50
 
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../../services/ResourceSuggestionService.php';
+require_once __DIR__ . '/../../../../services/CacheInvalidationService.php';
 
 try {
 
@@ -136,13 +137,16 @@ try {
     // actualizar order
     $stmt = $pdo->prepare("
         UPDATE orders
-        SET status = 20
+        SET 
+        vehicle_id  = ?,
+        status = 20
         WHERE id = ?
         AND tenant_id = ?
     ");
-    $stmt->execute([$orderId, $tenantId]);
+    $stmt->execute([$vehicleId, $orderId, $tenantId]);    
 
-    $pdo->commit();
+    $pdo->commit();        
+    CacheInvalidationService::gridContext($tenantId);
 
     json_ok([
         'vehicle_id' => $vehicleId,

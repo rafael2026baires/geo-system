@@ -1,0 +1,47 @@
+Listado de rutas de carpetas para el volumen WIN10
+El n£mero de serie del volumen es 80A8-F0B1
+C:.
+³   listado.txt
+³   main.js
+³   
+____common
+³       helpers.js
+³       
+____fleet
+³       fleet.data.js
+³       fleet.state.store.mjs
+³       
+____grid
+³       grid.cells.js
+³       grid.events.js
+³       grid.mock.js
+³       grid.render.js
+³       grid.store.js
+³       grid.update.js
+³       
+____map
+³       map.camera.control.js
+³       map.clients.js
+³       map.floating.js
+³       map.init.js
+³       viewport.controller.js
+³       viewport.persistence.js
+³       
+____modes
+³       modes.handlers.js
+³       
+____orders
+³       direccion_autocomplete.js
+³       
+____realtime
+³       marker.lifecycle.js
+³       orientation.engine.js
+³       realtime.simple.v2.js
+³       unit.motion.js      
+____state
+³       unit.state.js
+
+____
+        kpi.render.js
+        ui.wiring.js
+        

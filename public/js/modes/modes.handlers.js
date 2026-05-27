@@ -13,7 +13,7 @@ export function createModeHandlers({
   startRealtimeMulti,
   pollLastPoint,
   animateMove,
-  createReplayMarker,
+  createVehicleMarker,
   clearReplay,
   updateFleetStatus,
   getRealtimeMulti
