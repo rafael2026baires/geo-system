@@ -29,6 +29,15 @@ function closeFocusPanelArea() {
   if (focusPanel) focusPanel.style.height = '0px';
 }
 
+function openAttachedFocusPanel() {
+  const focusPanel = document.getElementById('focus-panel');
+  if (!focusPanel) return;
+
+  const state = getFloatingState();
+  focusPanel.classList.add('focus-panel-open');
+  focusPanel.style.height = state.attachedHeight || '260px';
+}
+
 function showDetachedFocusMessage() {
   const emptyMessage = document.getElementById('focus-empty-message');
   if (!emptyMessage) return;
@@ -42,11 +51,120 @@ function showDetachedFocusMessage() {
   `;
 }
 
+function showClosedFocusMessage() {
+  const emptyMessage = document.getElementById('focus-empty-message');
+  if (!emptyMessage) return;
+
+  emptyMessage.classList.remove('hidden');
+  emptyMessage.innerHTML = `
+    <div class="focus-empty-title">Sin vehículo en foco</div>
+    <div class="focus-empty-text">
+      Seleccione un vehículo de la grilla para iniciar seguimiento.
+    </div>
+  `;
+}
+
+function setDetachButtonState(isDetached) {
+  const btn = document.getElementById('floating-detach');
+  if (!btn) return;
+
+  btn.textContent = isDetached ? '⇲' : '⇱';
+  btn.title = isDetached ? 'Acoplar ventana' : 'Desacoplar ventana';
+}
+
+function clearFloatingBoxInlineStyles(el) {
+  if (!el) return;
+
+  el.style.removeProperty('left');
+  el.style.removeProperty('top');
+  el.style.removeProperty('right');
+  el.style.removeProperty('bottom');
+  el.style.removeProperty('width');
+  el.style.removeProperty('height');
+}
+
+function showFloatingMap(unitId) {
+  const el = document.getElementById('floating-map');
+  if (el) el.classList.remove('hidden');
+
+  const label = document.getElementById('floating-label');
+  if (label) {
+    label.textContent = `Unidad: ${unitId}`;
+    label.classList.remove('hidden');
+  }
+}
+
+function hideFloatingMap() {
+  const el = document.getElementById('floating-map');
+  if (el) el.classList.add('hidden');
+
+  const label = document.getElementById('floating-label');
+  if (label) label.classList.add('hidden');
+}
+
+function hideFollowIndicator() {
+  const indicator = document.getElementById('follow-indicator');
+  if (indicator) indicator.classList.add('hidden');
+}
+
+function restoreFloatingMapView() {
+  requestAnimationFrame(() => {
+    if (!floatingMap) return;
+
+    floatingMap.invalidateSize();
+
+    const state = getFloatingState();
+    if (state.zoom) {
+      floatingMap.setZoom(state.zoom);
+    }
+  });
+}
+
+function refreshMainMapAfterLayoutChange() {
+  requestAnimationFrame(() => {
+    window.mainMap?.invalidateSize();
+  });
+}
+
 function shouldAnimateFloatingByZoom() {
   return floatingMap && floatingMap.getZoom() >= FLOATING_ANIMATION_MIN_ZOOM;
 }
 
+function clearFloatingTrackingState() {
+  if (floatingMarker && floatingMap) {
+    floatingMap.removeLayer(floatingMarker);
+  }
 
+  floatingMarker = null;
+  floatingMotion = null;
+  lastFloatingServerPoint = null;
+  lastPoint = null;
+}
+
+function detachFloatingWindow(el) {
+  el.classList.add('floating-detached');
+
+  loadFloatingBoxState(el);
+
+  closeFocusPanelArea();
+  showDetachedFocusMessage();
+
+  setDetachButtonState(true);
+}
+
+function attachFloatingWindow(el) {
+  el.classList.remove('floating-detached');
+
+  openAttachedFocusPanel();
+
+  const emptyMessage = document.getElementById('focus-empty-message');
+  if (emptyMessage) {
+    emptyMessage.classList.add('hidden');
+  }
+
+  clearFloatingBoxInlineStyles(el);
+  setDetachButtonState(false);
+}
 
 export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     const container = document.getElementById('floating-map');
@@ -79,15 +197,10 @@ export function openFloating(unitId) {
     const el = document.getElementById('floating-map');
     const isDetached = el?.classList.contains('floating-detached');    
 
-    if (focusPanel) {
-        focusPanel.classList.add('focus-panel-open');
-
-        if (isDetached) {
-            closeFocusPanelArea();
-        } else if (!focusPanel.style.height || focusPanel.style.height === '0px') {
-            const state = getFloatingState();
-            focusPanel.style.height = state.attachedHeight || '260px';
-        }
+    if (isDetached) {
+        closeFocusPanelArea();
+    } else if (!focusPanel?.style.height || focusPanel.style.height === '0px') {
+        openAttachedFocusPanel();
     }
 
     if (isDetached) {
@@ -95,69 +208,21 @@ export function openFloating(unitId) {
     } else if (emptyMessage) {
         emptyMessage.classList.add('hidden');
     }
-    if (el) {
-        el.classList.remove('hidden');
-    }  
+    showFloatingMap(unitId);    
     
-    const label = document.getElementById('floating-label');
-    if (label) {
-        label.textContent = `Unidad: ${unitId}`;
-        label.classList.remove('hidden');
-    }    
-    
-    const indicator = document.getElementById('follow-indicator');
-    if (indicator) indicator.classList.add('hidden');   
-    
-    // 🔴 PRIMERO recalcular tamaño
-    setTimeout(() => {
-        if (floatingMap) {
-          floatingMap.invalidateSize();
-
-          // 🔴 DESPUÉS aplicar zoom
-          const state = getFloatingState();
-          if (state.zoom) {
-            floatingMap.setZoom(state.zoom);
-          }
-        }
-    }, 0);
+    hideFollowIndicator();
+    restoreFloatingMapView();
 }
 
 export function closeFloating() {
     activeUnitId = null;
     clearUnitMarkerHighlight();
     
-    if (floatingMarker) {
-        floatingMap.removeLayer(floatingMarker);
-        floatingMarker = null;
-    }
-    floatingMotion = null;
-    lastFloatingServerPoint = null;    
-
-    const el = document.getElementById('floating-map');
-    if (el) el.classList.add('hidden');
+    clearFloatingTrackingState(); 
+    hideFloatingMap();   
     
-    const label = document.getElementById('floating-label');
-    if (label) {
-      label.classList.add('hidden');
-    }  
-    lastPoint = null;
-
-    const focusPanel = document.getElementById('focus-panel');
-    const emptyMessage = document.getElementById('focus-empty-message');
-
-    if (focusPanel) {
-      focusPanel.style.height = '0px';
-    }
-
-    if (emptyMessage) {
-      emptyMessage.classList.remove('hidden');
-      emptyMessage.innerHTML = `
-        <div class="focus-empty-title">Sin vehículo en foco</div>
-        <div class="focus-empty-text">
-          Seleccione un vehículo de la grilla para iniciar seguimiento.
-        </div>
-      `;
-    }
+    closeFocusPanelArea();
+    showClosedFocusMessage();
 }
 
 export function updateFloating(markersRef, dt = 0) {  
@@ -234,23 +299,20 @@ export function enableFloatingResize() {
 }
 
 export function enableFloatingClose() {
-    const btn = document.getElementById('floating-close');
-    if (!btn) return;
-    
-    btn.addEventListener('click', () => {
+  const btn = document.getElementById('floating-close');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
     closeFloating();
-        requestAnimationFrame(() => {
-      window.mainMap?.invalidateSize();
-    });
-    
+    refreshMainMapAfterLayoutChange();
+
     if (window.AppState) {
       window.AppState.activeUnitId = null;
     }
+
     document.dispatchEvent(new Event('grid:sync'));
-    
     stopFollow();
-    
-    });
+  });
 }
 
 export function enableFloatingDetach() {
@@ -264,42 +326,9 @@ export function enableFloatingDetach() {
     const willDetach = !el.classList.contains('floating-detached');
 
     if (willDetach) {
-      el.classList.add('floating-detached');
-
-      loadFloatingBoxState(el);
-
-      const focusPanel = document.getElementById('focus-panel');
-      const emptyMessage = document.getElementById('focus-empty-message');
-      
-      closeFocusPanelArea();
-      showDetachedFocusMessage();      
-
-      btn.textContent = '⇲';
-      btn.title = 'Acoplar ventana';
+      detachFloatingWindow(el);
     } else {
-      el.classList.remove('floating-detached');
-
-      const focusPanel = document.getElementById('focus-panel');
-      const emptyMessage = document.getElementById('focus-empty-message');
-
-      if (focusPanel) {
-          const state = getFloatingState();
-          focusPanel.style.height = state.attachedHeight || '260px';
-      }
-
-      if (emptyMessage) {
-        emptyMessage.classList.add('hidden');
-      }      
-
-      el.style.removeProperty('left');
-      el.style.removeProperty('top');
-      el.style.removeProperty('right');
-      el.style.removeProperty('bottom');
-      el.style.removeProperty('width');
-      el.style.removeProperty('height');
-
-      btn.textContent = '⇱';
-      btn.title = 'Desacoplar ventana';
+      attachFloatingWindow(el);
     }
 
     requestAnimationFrame(() => {
