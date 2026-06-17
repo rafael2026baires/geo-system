@@ -16,33 +16,6 @@ function hasValidClientPosition(client) {
   return client.lat != null && client.lng != null;
 }
 
-function getClientIconSizeByZoom(zoom) {
-  return zoom < 13 ? 30 : 40;
-}
-
-function getClientIconUrl(status, size) {
-  const isSmall = size === 30;
-
-  if (status === 40) {
-    return isSmall
-      ? '/assets/images/locations/fin-borde-location-30.png'
-      : '/assets/images/locations/fin-borde-location-40.png';
-  }
-
-  return isSmall
-    ? '/assets/images/locations/pte-borde-location-30.png'
-    : '/assets/images/locations/pte-borde-location-40.png';
-}
-
-function createClientIcon({ status, size }) {
-  return L.icon({
-    iconUrl: getClientIconUrl(status, size),
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    shadowUrl: null
-  });
-}
-
 function addClientCircle({ layer, lat, lng }) {
   
   const color = getComputedStyle(document.documentElement)
@@ -59,20 +32,6 @@ function addClientCircle({ layer, lat, lng }) {
     opacity: 0.4
   });
 }
-
-/*
-function addClientMarker({ layer, lat, lng, status, zoom }) {
-  const size = getClientIconSizeByZoom(zoom);
-
-  const icon = createClientIcon({
-    status,
-    size
-  });
-
-  const marker = L.marker([lat, lng], { icon }).addTo(layer);
-  marker.setOpacity(0.15);
-}
-*/  
 
 function addClientMarker({ layer, lat, lng, status }) {
 
