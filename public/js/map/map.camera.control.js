@@ -4,7 +4,7 @@ import {
   flyToPosition,
   setMapCenter,
   getMapZoom
-} from './map.adapter.leaflet.js';
+} from './map.adapter.js';
 
 let followedUnitId = null; 
 let mapRef = null;

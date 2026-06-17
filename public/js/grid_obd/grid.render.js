@@ -4,7 +4,9 @@ import { bindGridEvents, syncGridSelection } from './grid.events.js';
 import { 
   USE_GRID_MOCK, 
   mockBase, 
-  mockUnits
+  mockUnits,
+  USE_OBD_MOCK,
+  mockObdByVehicleId
 } from './grid.mock.js';
 
 import {
@@ -12,6 +14,9 @@ import {
   renderMotionCell,
   renderStateSlot,
   renderOrdersCell,
+  renderObdFuelCell,
+  renderObdTempCell,
+  renderObdMotorCell,
   renderTimeline
 } from './grid.cells.js';
 
@@ -19,10 +24,10 @@ import { getLastUnit, setLastUnits } from './grid.store.js';
 import { hasUnitChanged, hasActiveChanged, getChangedUnitsWithoutActiveChange} from './grid.update.js';
 
 const containerId = 'grid-new';
-const GRID_COLS = 11;
+const GRID_COLS = 15;
 
-function getGridCols() {
-  return 11;
+function getGridCols(usesObd) {
+  return usesObd ? 15 : 11;
 }
 
 const gridViewMode = {
@@ -30,7 +35,8 @@ const gridViewMode = {
   connectivity: 'fixed',
   state: 'simple',
   orders: 'detail',
-  nodes: 'fixed'
+  nodes: 'fixed',
+  obd: 'simple'
 };
 
 export function renderSummaryFromBackend(summary) {
@@ -44,7 +50,7 @@ export function renderSummaryFromBackend(summary) {
   `;
 }
 
-function renderGridHeader() {  
+function renderGridHeader(usesObd) {  
   return `
     <div class="item grid-header"></div>
 
@@ -74,7 +80,7 @@ function renderGridHeader() {
 
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/base.png"       
+        src="/assets/images/grid/base-24.png"       
         class="grid-header-icon header-icon-base"
         title="En Base"
         alt="En Base"
@@ -82,7 +88,7 @@ function renderGridHeader() {
     </div>
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/street.png"       
+        src="/assets/images/grid/street-24.png"       
         class="grid-header-icon header-icon-street"
         title="En Calle"
         alt="En Calle"
@@ -103,7 +109,7 @@ function renderGridHeader() {
 
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/orders_loaded.png"       
+        src="/assets/images/grid/boxes.png"       
         class="grid-header-icon header-icon-boxes"
         title="Pedidos"
         alt="Pedidos"
@@ -117,7 +123,39 @@ function renderGridHeader() {
         title="Ruta"
         alt="Ruta"
       >
-    </div>      
+    </div>         
+
+    ${usesObd ? `
+
+      <div class="item grid-header"></div>
+
+      <div class="item grid-header">
+        <img 
+          src="/assets/images/grid/engine.png"       
+          class="grid-header-icon header-icon-engine"
+          title="Motor"
+          alt="Motor"
+        >
+      </div>
+
+      <div class="item grid-header">
+        <img 
+          src="/assets/images/grid/fuel-0.png"       
+          class="grid-header-icon header-icon-fuel"
+          title="Combustible"
+          alt="Combustible"
+        >
+      </div>   
+
+      <div class="item grid-header">
+        <img 
+          src="/assets/images/grid/temp-0.png"       
+          class="grid-header-icon header-icon-temp"
+          title="Temperatura"
+          alt="Temperatura"
+        >    
+      </div>
+    ` : ''}
 
   `;
 }
@@ -129,18 +167,25 @@ function renderEmptyCells(count) {
   ).join('');
 }
 
-function renderInactiveRow(u) {  
+function renderInactiveRow(u, usesObd) {  
   return `        
     <div class="item vehicle-name vehicle-inactive" data-row-unit="${u.unit_id}">
       Vehículo ${u.vehicle_id}
-    </div>        
-    ${renderEmptyCells(getGridCols() - 1)}
+    </div>    
+    ${renderEmptyCells(getGridCols(usesObd) - 1)}
   `;
 }
 
-function renderActiveRow(u, maxTotal, gridBase) {  
+function renderActiveRow(u, maxTotal, gridBase, usesObd) {  
   const unit = {
     ...u,
+    obd: (
+      USE_OBD_MOCK &&
+      mockObdByVehicleId[u.vehicle_id] &&
+      (!u.obd || u.obd.fuel_level === null)
+    )
+      ? mockObdByVehicleId[u.vehicle_id]
+      : u.obd
   };
 
   return `        
@@ -181,12 +226,28 @@ function renderActiveRow(u, maxTotal, gridBase) {
     <div class="item item-timeline">
       ${renderTimeline(unit, gridBase)}
     </div>
+
+    ${usesObd ? `
+        <div class="item item-separator"></div>
+
+        <div class="item item-motor">
+          ${renderObdMotorCell(unit)}
+        </div>
+
+        <div class="item item-obd item-obd-fuel">
+          ${renderObdFuelCell(unit)}
+        </div>
+
+        <div class="item item-obd item-obd-temp">
+          ${renderObdTempCell(unit)}
+        </div>
+    ` : ''}
   `;
 }
 
-function replaceGridRow(container, unitId, rowHtml) {  
+function replaceGridRow(container, unitId, rowHtml, usesObd) {  
 
-  const gridCols = getGridCols();
+  const gridCols = getGridCols(usesObd);
   const firstCell = container.querySelector(`[data-row-unit="${unitId}"]`);
   if (!firstCell) return false;
 
@@ -214,6 +275,8 @@ function replaceGridRow(container, unitId, rowHtml) {
 }
 
 function renderGrid(units, base) {  
+
+    const usesObd = window.AppConfig?.usesObd === true;
     
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -251,11 +314,11 @@ function renderGrid(units, base) {
 
         changedUnitsWithoutActiveChange.forEach(u => {
           const rowHtml = u.active === 1            
-            ? renderActiveRow(u, maxTotal, gridBase)
-            : renderInactiveRow(u);
+            ? renderActiveRow(u, maxTotal, gridBase, usesObd)
+            : renderInactiveRow(u, usesObd);
 
-          replaceGridRow(container, u.unit_id, rowHtml);
-        
+          replaceGridRow(container, u.unit_id, rowHtml, usesObd);
+          // console.log('[GRID] reemplaza fila', u.unit_id);
         });
 
         //renderKPIs(gridUnits);
@@ -264,8 +327,9 @@ function renderGrid(units, base) {
         return;
     }
         
-    let html = `<div class="grid-container-geo">`;
-    html += renderGridHeader();
+    let html = `<div class="grid-container-geo ${usesObd ? 'grid-with-obd' : 'grid-no-obd'}">`;
+    
+    html += renderGridHeader(usesObd);
 
     const maxTotal = Math.max(...gridUnits.map(u => {  
       return (u.orders_assigned || 0) + (u.orders_loaded || 0) + (u.orders_delivered || 0);
@@ -276,16 +340,23 @@ function renderGrid(units, base) {
 
       const unit = {
         ...u,
+        obd: (
+          USE_OBD_MOCK &&
+          mockObdByVehicleId[u.vehicle_id] &&
+          (!u.obd || u.obd.fuel_level === null)
+        )
+          ? mockObdByVehicleId[u.vehicle_id]
+          : u.obd
       };
         
         // ---------------------------  DATOS DE LA GRILLA  ----------------
         // * INACTIVOS *
         if (u.active !== 1) {
-            html += renderInactiveRow(u);
+            html += renderInactiveRow(u, usesObd);
             return;
         }
         // * ACTIVOS *        
-        html += renderActiveRow(u, maxTotal, gridBase);
+        html += renderActiveRow(u, maxTotal, gridBase, usesObd);
         // -------------------------------------------------------------------
     });
     html += '</div>';    

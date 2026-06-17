@@ -1,5 +1,5 @@
 import { distanceMeters } from '../common/helpers.js';
-import { setMarkerPosition } from '../map/map.adapter.leaflet.js';
+import { setMarkerPosition } from '../map/map.adapter.js';
 
 export class UnitMotion {
   constructor(marker) {

@@ -4,7 +4,7 @@ import {
   createLayerGroup,
   createMapPane,
   createBaseCircle
-} from './map.adapter.leaflet.js';
+} from './map.adapter.js';
 
 export function initMap(containerId, defaultLat, defaultLng, baseRadiusM) {    
     

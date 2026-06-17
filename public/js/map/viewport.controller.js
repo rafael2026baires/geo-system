@@ -9,7 +9,7 @@
 
 
 import { saveViewportState, loadViewportState } from './viewport.persistence.js';
-import { createBoundsFromUnits } from './map.adapter.leaflet.js';
+import { createBoundsFromUnits } from './map.adapter.js';
 
 export function initViewport({ map, getUnits, getActiveUnit, getFlags }) {
     

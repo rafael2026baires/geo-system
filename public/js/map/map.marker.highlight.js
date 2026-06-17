@@ -1,4 +1,4 @@
-import { getMarkerElement } from './map.adapter.leaflet.js';
+import { getMarkerElement } from './map.adapter.js';
 
 let highlightedMarker = null;
 

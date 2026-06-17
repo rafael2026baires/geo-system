@@ -3,7 +3,7 @@ import { upsertFleetState } from '../fleet/fleet.state.store.mjs';
 import { updateOrientation } from '../realtime/orientation.engine.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
 import { closeFloating } from '../map/map.floating.js';
-import { getMapZoom, setMarkerOpacity, removeLayerFromGroup} from '../map/map.adapter.leaflet.js';
+import { getMapZoom, setMarkerOpacity, removeLayerFromGroup} from '../map/map.adapter.js';
 
 const VEHICLE_ANIMATION_MIN_ZOOM = 18;
 

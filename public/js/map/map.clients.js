@@ -5,7 +5,7 @@ import {
   clearLayerGroup,
   onMapZoom,
   getMapZoom
-} from './map.adapter.leaflet.js';
+} from './map.adapter.js';
 
 let clientsLayer = null;
 

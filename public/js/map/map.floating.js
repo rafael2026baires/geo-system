@@ -20,7 +20,7 @@ import {
   removeMapLayer,
   getMapZoom,
   getMarkerPosition
-} from './map.adapter.leaflet.js';
+} from './map.adapter.js';
 
 let floatingMap = null;
 

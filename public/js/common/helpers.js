@@ -3,7 +3,7 @@ import {
   getMarkerElement,
   createDivIcon,
   createMapMarker
-} from '../map/map.adapter.leaflet.js';
+} from '../map/map.adapter.js';
 
 let realtimeAnimRunning = false;
 let realtimeRafId = null;

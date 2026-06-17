@@ -35,11 +35,20 @@ export function loadFloatingBoxState(el) {
 
   const state = getFloatingState();
 
-  if (state.left) el.style.setProperty('left', state.left, 'important');
-  if (state.top) el.style.setProperty('top', state.top, 'important');
+  const hasSavedPosition = Boolean(state.left && state.top);
+
+  if (hasSavedPosition) {
+    el.style.setProperty('left', state.left, 'important');
+    el.style.setProperty('top', state.top, 'important');
+    el.style.setProperty('right', 'auto', 'important');
+    el.style.setProperty('bottom', 'auto', 'important');
+  } else {
+    el.style.removeProperty('left');
+    el.style.removeProperty('top');
+    el.style.removeProperty('right');
+    el.style.removeProperty('bottom');
+  }
+
   if (state.width) el.style.setProperty('width', state.width, 'important');
   if (state.height) el.style.setProperty('height', state.height, 'important');
-
-  el.style.setProperty('right', 'auto', 'important');
-  el.style.setProperty('bottom', 'auto', 'important');
 }

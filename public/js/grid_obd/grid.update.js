@@ -4,15 +4,16 @@ export function hasUnitChanged(prev, next) {
   if (prev && !next) return true;
   if (!prev && !next) return false;
 
-return (
-  prev.active !== next.active ||
-  prev.tech_state !== next.tech_state ||
-  prev.state !== next.state ||
-  prev.orders_assigned !== next.orders_assigned ||
-  prev.orders_loaded !== next.orders_loaded ||
-  prev.orders_delivered !== next.orders_delivered ||
-  JSON.stringify(prev.clients || []) !== JSON.stringify(next.clients || [])
-);
+  return (
+    prev.active !== next.active ||
+    prev.tech_state !== next.tech_state ||
+    prev.state !== next.state ||
+    prev.orders_assigned !== next.orders_assigned ||
+    prev.orders_loaded !== next.orders_loaded ||
+    prev.orders_delivered !== next.orders_delivered ||
+    JSON.stringify(prev.clients || []) !== JSON.stringify(next.clients || []) ||
+    JSON.stringify(prev.obd || {}) !== JSON.stringify(next.obd || {})
+  );
 
 }
 

@@ -7,7 +7,7 @@ import { renderClients } from '../map/map.clients.js';
 import { renderRealtimeDashboard } from './realtime.dashboard.render.js';
 import { processUnit } from './realtime.unit.processor.js';
 import { refreshDashboardCharts } from '../dashboard/dashboard.charts.data.js';
-import { onMapZoomEnd, getMapZoom} from '../map/map.adapter.leaflet.js';
+import { onMapZoomEnd, getMapZoom} from '../map/map.adapter.js';
 
 let intervalId = null;
 

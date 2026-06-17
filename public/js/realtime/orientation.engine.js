@@ -5,7 +5,7 @@
 // NO toca labels
 // NO maneja reconexión
 
-import { getMarkerElement } from '../map/map.adapter.leaflet.js';
+import { getMarkerElement } from '../map/map.adapter.js';
 
 const DEFAULT_ICON_OFFSET_DEG = -90; // ajustá según orientación del PNG
 
