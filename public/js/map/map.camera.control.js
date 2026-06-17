@@ -1,4 +1,10 @@
 import { highlightUnitMarkerById } from './map.marker.highlight.js';
+import {
+  getMarkerPosition,
+  flyToPosition,
+  setMapCenter,
+  getMapZoom
+} from './map.adapter.leaflet.js';
 
 let followedUnitId = null; 
 let mapRef = null;
@@ -23,8 +29,8 @@ export function focusUnit(unitId) {
   const marker = markersRef.get(unitId);
   if (!marker) return;
 
-  const latlng = marker.getLatLng();
-  mapRef.flyTo(latlng, 16);
+  const latlng = getMarkerPosition(marker);
+  flyToPosition(mapRef, latlng, 16);
 }
 
 export function followUnit(unitId) {
@@ -52,7 +58,7 @@ export function updateFollow() {
     return;
   }
 
-  const p = marker.getLatLng();
+  const p = getMarkerPosition(marker);
   if (!p) return;
 
   if (p.lat === lastLat && p.lng === lastLng) return;
@@ -60,7 +66,7 @@ export function updateFollow() {
   lastLat = p.lat;
   lastLng = p.lng;
 
-  mapRef.setView(p, mapRef.getZoom(), { animate: false });
+  setMapCenter(mapRef, p, getMapZoom(mapRef));
 }
 
 export function onUserMove() {

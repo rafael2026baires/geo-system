@@ -50,3 +50,39 @@ export function createBaseCircle(map, defaultLat, defaultLng, baseRadiusM) {
 export function createBoundsFromUnits(units) {
   return L.latLngBounds(units.map(u => [u.lat, u.lng]));
 }
+
+export function getMarkerPosition(marker) {
+  return marker.getLatLng();
+}
+
+export function flyToPosition(map, position, zoom) {
+  map.flyTo(position, zoom);
+}
+
+export function setMapCenter(map, position, zoom) {
+  map.setView(position, zoom, { animate: false });
+}
+
+export function getMapZoom(map) {
+  return map.getZoom();
+}
+
+export function invalidateMapSize(map) {
+  map.invalidateSize();
+}
+
+export function setMapZoom(map, zoom) {
+  map.setZoom(zoom);
+}
+
+export function setMapMinZoom(map, zoom) {
+  map.setMinZoom(zoom);
+}
+
+export function panMapTo(map, position) {
+  map.panTo(position, { animate: false });
+}
+
+export function removeMapLayer(map, layer) {
+  map.removeLayer(layer);
+}

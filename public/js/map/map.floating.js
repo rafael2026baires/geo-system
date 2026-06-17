@@ -12,6 +12,15 @@ import {
 import { enableFloatingDragBehavior } from './map.floating.drag.js';
 import { enableFloatingResizeBehavior } from './map.floating.resize.js';
 import { clearUnitMarkerHighlight } from './map.marker.highlight.js';
+import {
+  invalidateMapSize,
+  setMapZoom,
+  setMapMinZoom,
+  panMapTo,
+  removeMapLayer,
+  getMapZoom,
+  getMarkerPosition
+} from './map.adapter.leaflet.js';
 
 let floatingMap = null;
 
@@ -111,28 +120,28 @@ function restoreFloatingMapView() {
   requestAnimationFrame(() => {
     if (!floatingMap) return;
 
-    floatingMap.invalidateSize();
+    invalidateMapSize(floatingMap);
 
     const state = getFloatingState();
     if (state.zoom) {
-      floatingMap.setZoom(state.zoom);
+      setMapZoom(floatingMap, state.zoom);
     }
   });
 }
 
 function refreshMainMapAfterLayoutChange() {
   requestAnimationFrame(() => {
-    window.mainMap?.invalidateSize();
+    if (window.mainMap) invalidateMapSize(window.mainMap);
   });
 }
 
 function shouldAnimateFloatingByZoom() {
-  return floatingMap && floatingMap.getZoom() >= FLOATING_ANIMATION_MIN_ZOOM;
+  return floatingMap && getMapZoom(floatingMap) >= FLOATING_ANIMATION_MIN_ZOOM;
 }
 
 function clearFloatingTrackingState() {
   if (floatingMarker && floatingMap) {
-    floatingMap.removeLayer(floatingMarker);
+    removeMapLayer(floatingMap, floatingMarker);
   }
 
   floatingMarker = null;
@@ -173,16 +182,16 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     const res = initMap('floating-map', defaultLat, defaultLng, baseRadiusM);
     
     floatingMap = res.map;
-    floatingMap.setMinZoom(15);
+    setMapMinZoom(floatingMap, 15);
   
     floatingMap.on('zoomend', () => {
       if (!activeUnitId) return;
 
       saveFloatingStatePatch({
-        zoom: floatingMap.getZoom()
+        zoom: getMapZoom(floatingMap)
       });
 
-      updateVehicleMarkerSize(floatingMarker, floatingMap.getZoom());
+      updateVehicleMarkerSize(floatingMarker, getMapZoom(floatingMap));
     });  
 }
 
@@ -233,19 +242,19 @@ export function updateFloating(markersRef, dt = 0) {
   if (!marker) return;
 
   //const p = marker.getLatLng();
-  const p = marker.__lastPoint || marker.getLatLng();
+  const p = marker.__lastPoint || getMarkerPosition(marker);
   if (!p) return;
 
   // crear marker si no existe
   if (!floatingMarker) {    
-    floatingMarker = createVehicleMarker(floatingMap, p, floatingMap.getZoom());
+    floatingMarker = createVehicleMarker(floatingMap, p, getMapZoom(floatingMap));
 
     floatingMotion = new UnitMotion(floatingMarker);
     floatingMotion.setInitialPoint(p);
     lastFloatingServerPoint = p;
 
     lastPoint = p;
-    floatingMap.panTo(p, { animate: false });
+    panMapTo(floatingMap, p);
     return;
   }
 
@@ -276,7 +285,7 @@ export function updateFloating(markersRef, dt = 0) {
     floatingMotion.tick(dt);
   }
 
-  floatingMap.panTo(floatingMarker.getLatLng(), { animate: false });
+  panMapTo(floatingMap, getMarkerPosition(floatingMarker));
 }
 
 export function enableFloatingDrag() {
@@ -332,7 +341,7 @@ export function enableFloatingDetach() {
     }
 
     requestAnimationFrame(() => {
-      window.mainMap?.invalidateSize();
+      if (window.mainMap) invalidateMapSize(window.mainMap);
       refreshFloatingMapView();
     });
   });
@@ -342,9 +351,9 @@ export function enableFloatingDetach() {
 export function refreshFloatingMapView() {
   if (!floatingMap) return;
 
-  floatingMap.invalidateSize();
+  invalidateMapSize(floatingMap);
 
   if (floatingMarker) {
-    floatingMap.panTo(floatingMarker.getLatLng(), { animate: false });
+    panMapTo(floatingMap, getMarkerPosition(floatingMarker));
   }
 }
