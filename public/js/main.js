@@ -14,23 +14,34 @@ import { stopFollow, onUserMove, focusUnit, followUnit } from './map/map.camera.
 import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag, 
          enableFloatingResize, enableFloatingClose, enableFloatingDetach, refreshFloatingMapView } 
          from './map/map.floating.js';
-import { saveFloatingStatePatch } from './map/map.floating.state.js';         
+import { saveFloatingStatePatch } from './map/map.floating.state.js';    
+import { createLayerGroup } from './map/map.adapter.leaflet.js';     
 
 let TENANT_ID = null;
 let realtimeInstance = null;
 
+// TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+/*
 function getSidebarDefaultWidth() {
   return window.AppConfig?.usesObd ? 940 : 670;
+}
+*/
+function getSidebarDefaultWidth() {
+  return 1050;
 }
 
 fetch('/session_info.php')
   .then(r => r.json())
 
-  .then(cfg => {
+  .then(async cfg => {
       TENANT_ID = cfg.tenant_id;
       window.AppConfig = {
         usesObd: Number(cfg.uses_obd) === 1
       };
+
+      if (typeof window.loadUiTheme === 'function') {
+        await window.loadUiTheme();
+      }
 
       const sidebarEl = document.getElementById('sidebar');
       if (sidebarEl) {
@@ -62,8 +73,8 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
       realtimeInstance.stop();
     }
     realtimeInstance = runRealtimeV2({
-      map,
-      layer: L.layerGroup().addTo(map),            
+      map,      
+      layer: createLayerGroup(map),      
       url: '/api/realtime/get_units_realtime_v2.php'
     });        
 
@@ -440,12 +451,10 @@ if (toggleSidebarBtn && sidebar) {
 
     if (!isCollapsed) {
       lastSidebarWidth = sidebar.offsetWidth;
-      sidebar.classList.add('sidebar-collapsed');
-      toggleSidebarBtn.textContent = 'Panel';
+      sidebar.classList.add('sidebar-collapsed');      
     } else {
       sidebar.classList.remove('sidebar-collapsed');
-      sidebar.style.width = `${lastSidebarWidth}px`;
-      toggleSidebarBtn.textContent = 'Panel';
+      sidebar.style.width = `${lastSidebarWidth}px`;      
     }
 
     setTimeout(() => {

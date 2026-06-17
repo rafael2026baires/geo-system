@@ -1,14 +1,15 @@
 // VIEWPORT CONTROLLER
 // Responsabilidad: decidir centro/zoom del mapa.
-// NO conoce realtime ni estados t¨¦cnicos.
+// NO conoce realtime ni estados tï¿½ï¿½cnicos.
 // Reacciona a:
 // - cambios de unidades (coordenadas)
 // - unidad activa
 // - acciones del usuario (pan/zoom)
-// Mantener l¨®gica intacta mientras ordenamos el frontend.
+// Mantener lï¿½ï¿½gica intacta mientras ordenamos el frontend.
 
 
 import { saveViewportState, loadViewportState } from './viewport.persistence.js';
+import { createBoundsFromUnits } from './map.adapter.leaflet.js';
 
 export function initViewport({ map, getUnits, getActiveUnit, getFlags }) {
     
@@ -48,7 +49,7 @@ export function initViewport({ map, getUnits, getActiveUnit, getFlags }) {
     if (autoFitPolicy === 'FIT_ALL') {
         
       if (didInitialAutoFit) return;
-      const bounds = L.latLngBounds(units.map(u => [u.lat, u.lng]));
+      const bounds = createBoundsFromUnits(units);
     
       map.fitBounds(bounds, {
         padding: [40, 40],
@@ -79,7 +80,7 @@ export function initViewport({ map, getUnits, getActiveUnit, getFlags }) {
       const units = getUnits().filter(u => u.lat != null && u.lng != null);
       if (!units.length) return;
     
-      const bounds = L.latLngBounds(units.map(u => [u.lat, u.lng]));
+      const bounds = createBoundsFromUnits(units);
       const diag = bounds.getNorthEast().distanceTo(bounds.getSouthWest());
     
       //console.log('[fitAllNow] diagonal (m):', Math.round(diag));
