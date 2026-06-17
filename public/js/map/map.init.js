@@ -11,10 +11,7 @@ export function initMap(containerId, defaultLat, defaultLng, baseRadiusM) {
     //const map = L.map('map').setView([defaultLat, defaultLng], 12);
     const map = createLeafletMap(containerId, defaultLat, defaultLng);
        
-    createMapPane(map, 'circlePane', 650);  
-
-    map.options.zoomSnap = 0.5;
-    map.options.zoomDelta = 0.5;    
+    createMapPane(map, 'circlePane', 650);     
 
     createTileLayer(map);    
     // ----- visualización de zoon para prueba -------------------------------

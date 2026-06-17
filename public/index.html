@@ -7,32 +7,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="./css/styles.css">
   
   <link rel="stylesheet" href="./css/grid.css">
   <link rel="stylesheet" href="./css/chart.css">
   <link rel="stylesheet" href="./css/cards.css">
+  <link rel="stylesheet" href="./css/kpi.donuts.css">
   
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   
 </head>
 
-<body>
+<body class="theme-loading">
 
 <header>
-   <div class="titulo">
+
+  <div class="titulo">
      <h1>Geolocalización TwyBox</h1>
-   </div>
+  </div> 
+
+  <div class="header-fleet-card">
+    <span class="header-fleet-label">Vehículos Activos</span>
+    <span class="header-fleet-value" id="kpi-veh-activos-main">0 / 0</span>
+  </div>   
   
    <div class="acciones">
-    <!-- <button id="btnReplay">▶ Replay</button> -->     
-    <button id="btnFitAll" class="btn-fit-all">Ver todas</button>
-    <button id="toggleSidebar">Panel</button>
-    <!--
-    <button id="modeMap">Mapa</button>
-    <button id="modeFloating">Ventana</button>
-    <span id="modeLabel">Modo: Mapa</span>
-    -->
+      <!--
+      <button id="btnReplay">▶ Replay</button>
+      <button id="btnFitAll" class="btn-fit-all">Ver todas</button>    
+      <button id="modeMap">Mapa</button>
+      <button id="modeFloating">Ventana</button>
+      <span id="modeLabel">Modo: Mapa</span>
+      -->
    </div>  
   
     <div id="userBox">
@@ -48,105 +55,333 @@
     
     <aside id="sidebar">
 
+    <button id="toggleSidebar" class="sidebar-toggle-btn" title="Mostrar / ocultar panel">☰</button>
+
     <div id="sidebar-resizer"></div>
-
-
-
+    
     <!-- **************** CARDS KPI ************* -->        
     <div class="kpi-summary">
+      <div class="kpi-scroll">   
+        <div id="kpi-container" class="kpi-panel"> 
 
-      <div class="kpi-scroll">
-          <div id="kpi-container" class="kpi-container">  
-        
-          <!-- Activos -->
-          <div class="kpi-card" id="kpi-activos">
-            <div class="kpi-value">
-              <span class="kpi-main">0</span>
-              <span class="kpi-total">/0</span>
-            </div>
-            <div class="kpi-label">Vehículos Activos</div>
-          </div>
-        
-          <!-- En tránsito -->
-          <div class="kpi-card" id="kpi-transito">
-            <div class="kpi-value">
-              <span class="kpi-main">0</span>
-            </div>
-            <div class="kpi-label">En tránsito</div>
-          </div>
-        
-          <!-- Con señal -->
-          <div class="kpi-card" id="kpi-senal">
-            <div class="kpi-value">
-              <span class="kpi-main">0</span>
-            </div>
-            <div class="kpi-label">Con señal</div>
-          </div>
-        
-          <!-- Pendientes -->
-          <div class="kpi-card" id="kpi-pendientes">
-            <div class="kpi-value">
-              <span class="kpi-main">0</span>
-            </div>
-            <div class="kpi-label">Pedidos por Entrega</div>
-          </div>
-          
-          </div>
-      </div>    
-    </div> 
+            <div class="kpi-columns">
 
+                  <div class="kpi-group-ops">
+
+                        <div class="kpi-group-title">
+                          Estados Operativos
+                        </div>
+
+                        <div class="kpi-column kpi-column-status">
+
+                            <div class="kpi-status-row">
+
+                                <!-- ************************* mini contenedor señal ******************* -->
+                                <section class="kpi-block kpi-block-signal">
+                                  <div class="kpi-title">
+                                    <img class="kpi-icono-titulo" src="./assets/images/kpis/signal.png" alt="">
+                                    Señal
+                                  </div>
+
+                                  <div class="kpi-cards">                  
+
+                                      <div class="kpi-card kpi-card-normal kpi-card-bars">
+                                        
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/signal-ok.png" alt="">
+                                          <div class="kpi-main" id="kpi-signal-ok-main">0</div>
+                                        </div>
+                                                                  
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/signal-no.png" alt="">
+                                          <div class="kpi-main" id="kpi-signal-nodata-main">0</div>
+                                        </div>
+
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/alert.png" alt="">
+                                          <div class="kpi-main" id="kpi-signal-alert-main">0</div>
+                                        </div>
+
+                                      </div>                            
+                                  </div>  
+
+                                </section>                
+                            
+                                <!-- ************************* mini contenedor actividad ******************* -->
+                                <section class="kpi-block kpi-block-activity">
+                                  <div class="kpi-title">
+                                    <img class="kpi-icono-titulo" src="./assets/images/kpis/activity.png" alt="">
+                                    Movim.
+                                  </div>
+
+                                  <div class="kpi-cards">                             
+                                    
+                                      <div class="kpi-card kpi-card-normal kpi-card-bars">
+
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/moving.png" alt="">
+                                          <div class="kpi-main" id="kpi-activity-moving-main">0</div>
+                                        </div>
+
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/stopped.png" alt="">
+                                          <div class="kpi-main" id="kpi-activity-stopped-main">0</div>
+                                        </div>
+
+                                        <div class="kpi-bar-info">
+                                          <img class="kpi-icono-interno-chico" src="./assets/images/kpis/alert.png" alt="">
+                                          <div class="kpi-main" id="kpi-activity-stopped-alert-main">0</div>
+                                        </div>
+
+                                      </div>
+                                  </div>
+
+                                </section>  
+                            
+                            </div>       
+                            
+                        </div>    
+
+                        <div class="kpi-column kpi-column-location">
+
+                            <!-- ************************* mini contenedor ubicación ******************* -->   
+                            <section class="kpi-block kpi-block-location">                                          
+                              <div class="kpi-title"><img class="kpi-icono-titulo" src="./assets/images/kpis/location.png" alt="">Ubicación</div>
+
+                                  <div class="kpi-card kpi-card-normal kpi-card-donut kpi-location-donut-card">
+
+                                      <div class="kpi-donut-layout kpi-location-donut-layout">
+
+                                        <div class="kpi-donut-wrap">
+                                          <canvas id="locationDonutChart"></canvas>
+                                        </div>
+
+                                        <div class="kpi-donut-legend">
+                                          <div class="kpi-donut-legend-item">
+                                            <span class="kpi-donut-dot kpi-donut-dot-1"></span>
+                                            <span>Base</span>
+                                            <span class="kpi-donut-legend-value" id="kpi-veh-base-main">0</span>
+                                          </div>
+
+                                          <div class="kpi-donut-legend-item">
+                                            <span class="kpi-donut-dot kpi-donut-dot-2"></span>
+                                            <span>Calle</span>
+                                            <span class="kpi-donut-legend-value" id="kpi-veh-calle-main">0</span>
+                                          </div>
+
+                                          <div class="kpi-donut-legend-item">
+                                            <span class="kpi-donut-dot kpi-donut-dot-3"></span>
+                                            <span>Cliente</span>
+                                            <span class="kpi-donut-legend-value" id="kpi-veh-cliente-main">0</span>
+                                          </div>
+                                        </div>
+
+                                      </div>
+
+                                  </div>                      
+                              
+                            </section>  
+                        
+                        </div> 
+
+                  </div>
+
+                  <div class="kpi-column kpi-column-orders">
+
+                      <!-- ******************************** mini contenedor pedidos ****************************** -->   
+                      <section class="kpi-block kpi-block-orders">                                        
+                        <div class="kpi-title"><img class="kpi-icono-titulo" src="./assets/images/kpis/orders_flow.png" alt="">Flujo Operativo</div>
+
+                          <div class="kpi-cards">
+
+                            <div class="kpi-card kpi-card-normal kpi-card-donut kpi-orders-donut-card">
+
+                                <div class="kpi-donut-layout kpi-orders-donut-layout">
+
+                                  <div class="kpi-donut-wrap kpi-orders-donut-wrap">
+                                    <canvas id="ordersDonutChart"></canvas>
+                                  </div>
+
+                                  <div class="kpi-donut-legend">
+                                    <div class="kpi-donut-legend-item">
+                                      <span class="kpi-donut-dot kpi-donut-dot-1"></span>
+                                      <span>Pend. carga</span>
+                                      <span class="kpi-donut-legend-value" id="kpi-orders-pending-load-main">0</span>
+                                    </div>
+
+                                    <div class="kpi-donut-legend-item">
+                                      <span class="kpi-donut-dot kpi-donut-dot-2"></span>
+                                      <span>Pend. entrega</span>
+                                      <span class="kpi-donut-legend-value" id="kpi-orders-pending-delivery-main">0</span>
+                                    </div>
+
+                                    <div class="kpi-donut-legend-item">
+                                      <span class="kpi-donut-dot kpi-donut-dot-3"></span>
+                                      <span>Entregados</span>
+                                      <span class="kpi-donut-legend-value" id="kpi-orders-delivered-main">0</span>
+                                    </div>
+                                  </div>
+
+                                </div>
+
+                            </div>
+
+                          </div>                        
+
+                      </section>
+
+                  </div>  
+
+                  
+                  <!-- ********************************* mini contenedor telemetría *************************** 
+                  <div class="kpi-column kpi-column-telemetry">                    
+                         
+                      <section class="kpi-block kpi-block-telemetry">         
+
+                            <div class="kpi-title">
+                              <img class="kpi-icono-titulo" src="./assets/images/grid/activity.png" alt="">
+                              Telemetría
+                            </div>
+
+                            <div class="kpi-cards">
+
+                              <div class="kpi-card-wrap">
+                                <div class="kpi-card-title">OBD</div>
+
+                                <div class="kpi-card kpi-card-telemetry-main">
+                                  <div class="kpi-main" id="kpi-tel-obd-main">0 / 0</div>
+                                </div>
+                              </div>
+
+                              <div class="kpi-card-wrap">
+                                <div class="kpi-card-title">COMBUSTIBLE</div>
+
+                                <div class="kpi-card kpi-card-telemetry-mini">  
+                                  <div class="kpi-telemetry-row">
+                                    <img class="kpi-icono-interno-chico" src="./assets/images/kpis/ok-signal.png" alt="">
+                                    <div class="kpi-main" id="kpi-tel-fuel-ok-main">0</div>
+                                  </div>
+
+                                  <div class="kpi-telemetry-row">
+                                    <img class="kpi-icono-interno-chico" src="./assets/images/kpis/alert.png" alt="">
+                                    <div class="kpi-main" id="kpi-tel-fuel-low-main">0</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div class="kpi-card-wrap">
+                                <div class="kpi-card-title">MOTOR ON</div>
+
+                                <div class="kpi-card kpi-card-telemetry-main">
+                                  <div class="kpi-main" id="kpi-tel-motor-main">0 / 0</div>
+                                </div>
+                              </div>                              
+
+                              <div class="kpi-card-wrap">
+                                <div class="kpi-card-title">TEMPERATURA</div>
+
+                                <div class="kpi-card kpi-card-telemetry-mini">
+                                  <div class="kpi-telemetry-row">
+                                    <img class="kpi-icono-interno-chico" src="./assets/images/kpis/ok-signal.png" alt="">
+                                    <div class="kpi-main" id="kpi-tel-temp-ok-main">0</div>
+                                  </div>
+
+                                  <div class="kpi-telemetry-row">
+                                    <img class="kpi-icono-interno-chico" src="./assets/images/kpis/alert.png" alt="">
+                                    <div class="kpi-main" id="kpi-tel-temp-high-main">0</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                      </section>                 
+                     
+                  </div> -->              
+
+
+                  <div class="kpi-column kpi-column-grafico1">
+
+                    <section class="kpi-block kpi-block-grafico1">
+                      <div class="kpi-title">
+                        <img class="kpi-icono-interno-grande" src="./assets/images/kpis/base-24.png" alt="">                                           
+                        Base · Carga
+                      </div>
+
+                      <div class="street-rhythm-chart-wrap">
+                        <canvas id="baseRhythmChart"></canvas>
+                      </div>
+
+                      <div class="street-accum-chart-wrap">
+                        <canvas id="baseAccumChart"></canvas>
+                      </div>
+                    </section>
+
+                  </div>
+                  
+                  <div class="kpi-column kpi-column-grafico2">
+
+                    <section class="kpi-block kpi-block-grafico2">
+                      <div class="kpi-title">                
+                        <img class="kpi-icono-interno-grande" src="./assets/images/kpis/street-24.png" alt="">   
+                        Calle · Entrega
+                      </div>
+
+                      <div class="street-rhythm-chart-wrap">
+                        <canvas id="streetRhythmChart"></canvas>
+                      </div>
+
+                      <div class="street-accum-chart-wrap">
+                        <canvas id="streetAccumChart"></canvas>
+                      </div>
+                    </section>
+
+                  </div>                 
+                              
+            </div>           
+  
+            <!-- ************************************************************************************************ -->
+             
+        </div>        
+      </div>
+    </div>
     <!--  ****************** CONTENEDORES ***************** -->   
     <div class="boxes-container">
       <div class="box box-1"></div>
-      <div class="box box-2"></div>      
-    </div>  
-    <!-- **** Gráficos de torta 3d y barras verticales **** -->     
-    <div id="charts-summary">
-      <div class="charts-scroll">
-        <div class="charts-track">
-
-          <div id="chart-pedidos-wrap" class="chart-card">
-            <div id="chart-pedidos-3d"></div>
-          </div>
-
-          <div id="chart-vehiculos-wrap" class="chart-card">
-            <div id="chart-vehiculos-3d"></div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-    <!--  *************************************** -->         
+      <div class="box box-2"></div>    
+    </div>      
     
     <div class="grid-summary">
        <div id="grid-new"></div>
     </div>
-    </aside> 
-  
+    </aside>   
 
     <div id="map-workspace">
 
-      <div id="map"></div>
-      <div id="focus-resizer"></div>
+        <button id="btnFitAll" class="map-fit-all-btn" title="Ver todos los vehículos">
+          Ver todas
+        </button>
 
-      <section id="focus-panel" class="focus-panel focus-panel-empty">
-        <div id="focus-empty-message">
-          <div class="focus-empty-title">Sin vehículo en foco</div>
-          <div class="focus-empty-text">
-            Seleccione un vehículo de la grilla para iniciar seguimiento.
+        <div id="map"></div>
+        <div id="focus-resizer"></div>
+
+        <section id="focus-panel" class="focus-panel focus-panel-empty">
+          <div id="focus-empty-message">
+            <div class="focus-empty-title">Sin vehículo en foco</div>
+            <div class="focus-empty-text">
+              Seleccione un vehículo de la grilla para iniciar seguimiento.
+            </div>
           </div>
-        </div>
 
-        <div id="floating-map" class="floating-map hidden">
-          <button id="floating-close">✕</button>
-          <button id="floating-detach" class="floating-detach" title="Desacoplar ventana">⇱</button>
-          <span id="floating-label" class="floating-label hidden"></span>
-          <div class="resize-left"></div>
-          <div class="resize-right"></div>
-          <div class="resize-bottom"></div>
-          <div class="floating-resize"></div>   
-        </div>
-      </section>
+          <div id="floating-map" class="floating-map hidden">
+            <button id="floating-close">✕</button>
+            <button id="floating-detach" class="floating-detach" title="Desacoplar ventana">⇱</button>
+            <span id="floating-label" class="floating-label hidden"></span>
+            <div class="resize-left"></div>
+            <div class="resize-right"></div>
+            <div class="resize-bottom"></div>
+            <div class="floating-resize"></div>   
+          </div>
+        </section>
 
     </div>
 
@@ -154,6 +389,12 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="./js/dashboard/dashboard.ui.theme.js?v=dev1"></script>
+<!-- <script src="./js/dashboard/dashboard.theme.editor.js?v=dev1"></script> -->
+
 <script type="module" src="./js/main.js?v=dev52"></script>
 
 </body>
