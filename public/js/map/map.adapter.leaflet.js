@@ -106,3 +106,7 @@ export function createDivIcon(options) {
 export function createMapMarker(layer, position, options = {}) {
   return L.marker([position.lat, position.lng], options).addTo(layer);
 }
+
+export function onMapZoomEnd(map, callback) {
+  map.on('zoomend', callback);
+}

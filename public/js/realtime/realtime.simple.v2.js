@@ -6,6 +6,8 @@ import { updateFloating } from '../map/map.floating.js';
 import { renderClients } from '../map/map.clients.js';
 import { renderRealtimeDashboard } from './realtime.dashboard.render.js';
 import { processUnit } from './realtime.unit.processor.js';
+import { refreshDashboardCharts } from '../dashboard/dashboard.charts.data.js';
+import { onMapZoomEnd, getMapZoom} from '../map/map.adapter.leaflet.js';
 
 let intervalId = null;
 
@@ -15,9 +17,9 @@ export function runRealtimeV2({ map, layer, url }) {
     const motions = new Map();
     initCameraControl({ map, markers });
 
-    map.on('zoomend', () => {
+    onMapZoomEnd(map, () => {
       markers.forEach(marker => {
-        updateVehicleMarkerSize(marker, map.getZoom());
+        updateVehicleMarkerSize(marker, getMapZoom(map));
       });
     });
 
@@ -46,10 +48,17 @@ export function runRealtimeV2({ map, layer, url }) {
           });
         });
         renderRealtimeDashboard(json);
+        try {
+          refreshDashboardCharts();
+        } catch (e) {
+          console.error('[DASHBOARD-CHARTS-CALL-ERROR]', e);
+        }
+
         
     }
     tick();
     intervalId = setInterval(tick, 10000);  
+    //startDashboardChartsPolling();
     
     let last = null;
     let running = true;
@@ -107,6 +116,7 @@ export function runRealtimeV2({ map, layer, url }) {
         running = false;
         clearInterval(intervalId);
         intervalId = null;
+        //stopDashboardChartsPolling();
       }
     };
 }
