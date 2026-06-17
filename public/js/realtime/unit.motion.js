@@ -1,4 +1,5 @@
 import { distanceMeters } from '../common/helpers.js';
+import { setMarkerPosition } from '../map/map.adapter.leaflet.js';
 
 export class UnitMotion {
   constructor(marker) {
@@ -16,7 +17,7 @@ export class UnitMotion {
   // Arranque limpio con el primer punto real
   setInitialPoint(point) {
     this.virtualPos = { lat: point.lat, lng: point.lng };
-    this.marker.setLatLng([point.lat, point.lng]);
+    setMarkerPosition(this.marker, point);
   }
 
   snapTo(point) {
@@ -24,7 +25,7 @@ export class UnitMotion {
     this.heading = null;
     this.speed = 0;
     this.targetPos = null;
-    this.marker.setLatLng([point.lat, point.lng]);
+    setMarkerPosition(this.marker, point);
   }
 
 
@@ -47,7 +48,7 @@ export class UnitMotion {
         this.virtualPos = { lat: point.lat, lng: point.lng };
         this.heading = null;
         this.speed = 0;
-        this.marker.setLatLng([point.lat, point.lng]);
+        setMarkerPosition(this.marker, point);
 
         return;
       }    
@@ -61,7 +62,7 @@ export class UnitMotion {
       if (dist === 0) {
         this.heading = null;
         this.speed = 0;
-        this.marker.setLatLng([point.lat, point.lng]);
+        setMarkerPosition(this.marker, point);
         return;
       }
 
@@ -101,10 +102,7 @@ tick(dt) {
     this.speed = 0;
     this.targetPos = null;
 
-    this.marker.setLatLng([
-      this.virtualPos.lat,
-      this.virtualPos.lng
-    ]);
+    setMarkerPosition(this.marker, this.virtualPos);
 
     return;
   }
@@ -112,9 +110,6 @@ tick(dt) {
   this.virtualPos.lat = nextLat;
   this.virtualPos.lng = nextLng;
 
-  this.marker.setLatLng([
-    this.virtualPos.lat,
-    this.virtualPos.lng
-  ]);
+  setMarkerPosition(this.marker, this.virtualPos);
 }
 }

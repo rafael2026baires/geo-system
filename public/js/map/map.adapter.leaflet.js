@@ -86,3 +86,23 @@ export function panMapTo(map, position) {
 export function removeMapLayer(map, layer) {
   map.removeLayer(layer);
 }
+
+export function setMarkerPosition(marker, position) {
+  marker.setLatLng([position.lat, position.lng]);
+}
+
+export function setMarkerIcon(marker, icon) {
+  marker.setIcon(icon);
+}
+
+export function getMarkerElement(marker) {
+  return marker.getElement();
+} 
+
+export function createDivIcon(options) {
+  return L.divIcon(options);
+}
+
+export function createMapMarker(layer, position, options = {}) {
+  return L.marker([position.lat, position.lng], options).addTo(layer);
+}

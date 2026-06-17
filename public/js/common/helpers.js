@@ -1,3 +1,10 @@
+import {
+  setMarkerIcon,
+  getMarkerElement,
+  createDivIcon,
+  createMapMarker
+} from '../map/map.adapter.leaflet.js';
+
 let realtimeAnimRunning = false;
 let realtimeRafId = null;
 
@@ -60,7 +67,7 @@ function getVehicleMarkerVisualByZoom(zoom) {
 
 function createVehicleIcon(type, size) {
   if (type === 'dot') {
-    return L.divIcon({
+    return createDivIcon({
       className: 'veh-dot-icon',
       html: `<div class="veh-dot"></div>`,
       iconSize: [size, size],
@@ -68,7 +75,7 @@ function createVehicleIcon(type, size) {
     });
   }
 
-  return L.divIcon({
+  return createDivIcon({
     className: 'veh-icon',
     html: `
       <div class="veh-wrapper">
@@ -84,10 +91,10 @@ export function createVehicleMarker(layer, p, zoom = 13) {
   const visual = getVehicleMarkerVisualByZoom(zoom);
   const icon = createVehicleIcon(visual.type, visual.size);
 
-  const marker = L.marker([p.lat, p.lng], {
-    icon,
-    interactive: true
-  }).addTo(layer);
+  const marker = createMapMarker(layer, p, {
+     icon,
+     interactive: true
+  });
   
   marker.__vehicleMarkerVisual = visual;
 
@@ -106,11 +113,11 @@ export function updateVehicleMarkerSize(marker, zoom) {
     prev.size === visual.size
   ) return;
 
-  marker.setIcon(createVehicleIcon(visual.type, visual.size));
+  setMarkerIcon(marker, createVehicleIcon(visual.type, visual.size));
   marker.__vehicleMarkerVisual = visual;
 
   if (marker.__isHighlighted) {
-    const el = marker.getElement();
+    const el = getMarkerElement(marker);
     if (el) el.classList.add('veh-marker-highlight');
   }  
 }
