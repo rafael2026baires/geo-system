@@ -110,3 +110,27 @@ export function createMapMarker(layer, position, options = {}) {
 export function onMapZoomEnd(map, callback) {
   map.on('zoomend', callback);
 }
+
+export function setMarkerOpacity(marker, opacity) {
+  marker.setOpacity(opacity);
+}
+
+export function removeLayerFromGroup(layerGroup, layer) {
+  layerGroup.removeLayer(layer);
+}
+
+export function createMapCircle(layer, position, options) {
+  return L.circle([position.lat, position.lng], options).addTo(layer);
+}
+
+export function createMapCircleMarker(layer, position, options) {
+  return L.circleMarker([position.lat, position.lng], options).addTo(layer);
+}
+
+export function clearLayerGroup(layerGroup) {
+  layerGroup.clearLayers();
+}
+
+export function onMapZoom(map, callback) {
+  map.on('zoom', callback);
+}

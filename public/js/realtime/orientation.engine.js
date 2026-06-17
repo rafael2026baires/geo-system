@@ -5,6 +5,8 @@
 // NO toca labels
 // NO maneja reconexión
 
+import { getMarkerElement } from '../map/map.adapter.leaflet.js';
+
 const DEFAULT_ICON_OFFSET_DEG = -90; // ajustá según orientación del PNG
 
 function bearingDeg(a, b) {
@@ -25,7 +27,7 @@ function bearingDeg(a, b) {
 }
 
 function setMarkerBearing(marker, deg) {
-  const el = marker?.getElement?.();
+  const el = marker ? getMarkerElement(marker) : null;
   if (!el) return;
   el.style.setProperty('--bearing', `${deg}deg`);
 }

@@ -1,3 +1,12 @@
+import {
+  createLayerGroup,
+  createMapCircle,
+  createMapCircleMarker,
+  clearLayerGroup,
+  onMapZoom,
+  getMapZoom
+} from './map.adapter.leaflet.js';
+
 let clientsLayer = null;
 
 let lastMap = null;
@@ -35,16 +44,20 @@ function createClientIcon({ status, size }) {
 }
 
 function addClientCircle({ layer, lat, lng }) {
-  const color = '#2270A8';
+  
+  const color = getComputedStyle(document.documentElement)
+    .getPropertyValue('--map-client-circle-color')
+    .trim();
 
-  L.circle([lat, lng], {
+
+  createMapCircle(layer, { lat, lng }, {
     radius: 70,
     color: color,
     fillColor: color,
     fillOpacity: 0.2,
     weight: 0.5,
     opacity: 0.4
-  }).addTo(layer);
+  });
 }
 
 /*
@@ -62,16 +75,20 @@ function addClientMarker({ layer, lat, lng, status, zoom }) {
 */  
 
 function addClientMarker({ layer, lat, lng, status }) {
-  const color = status === 40 ? '#195AB0' : '#FF2EF5';
 
-  L.circleMarker([lat, lng], {
-    radius: 2,
-    color: color,
-    fillColor: color,
-    fillOpacity: 0.4,
-    opacity: 0.4,
-    weight: 1
-  }).addTo(layer);
+  const rootStyles = getComputedStyle(document.documentElement);
+  const color = status === 40
+    ? rootStyles.getPropertyValue('--map-client-done-color').trim()
+    : rootStyles.getPropertyValue('--map-client-pending-color').trim();  
+
+    createMapCircleMarker(layer, { lat, lng }, {
+      radius: 2,
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.4,
+      opacity: 0.4,
+      weight: 1
+    });
 }
 
 export function renderClients(map, data) {
@@ -80,14 +97,14 @@ export function renderClients(map, data) {
     lastData = data;
 
     if (!clientsLayer) {
-      clientsLayer = L.layerGroup().addTo(map);
-        map.on('zoom', () => {
+      clientsLayer = createLayerGroup(map);
+        onMapZoom(map, () => {
           if (lastMap && lastData) {
             renderClients(lastMap, lastData);
           }
         });      
     }
-    clientsLayer.clearLayers();
+    clearLayerGroup(clientsLayer);
     
     data.units.forEach(u => {
         
@@ -114,7 +131,7 @@ export function renderClients(map, data) {
               lat,
               lng,
               status,
-              zoom: map.getZoom()
+              zoom: getMapZoom(map)
             });   
         
         });
