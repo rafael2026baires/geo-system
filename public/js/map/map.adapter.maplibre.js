@@ -2,6 +2,8 @@
 // Adapter MapLibre para GEO-SYSTEM / TwyBox
 // Todavía NO activar desde map.adapter.js.
 
+import { ACTIVE_MAP_STYLE } from './map.styles.js';
+
 export function createLeafletMap(containerId, defaultLat, defaultLng) {
   const map = new maplibregl.Map({  
     container: containerId,
@@ -10,28 +12,7 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     pitch: 55,
     maxPitch: 80,
     bearing: -18,
-    style: {
-      version: 8,
-      sources: {
-        osm: {
-          type: 'raster',
-          tiles: [
-            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap © CARTO'
-        }
-      },
-      layers: [
-        {
-          id: 'osm-dark',
-          type: 'raster',
-          source: 'osm'
-        }
-      ]
-    }
+    style: getMapLibreStyle()
   });
   map.addControl(new maplibregl.NavigationControl({
       showCompass: false
@@ -68,6 +49,31 @@ export function createLayerGroup(map) {
       this.items.forEach(item => item?.remove?.());
       this.items = [];
     }
+  };
+}
+
+function getMapLibreStyle() {
+  if (ACTIVE_MAP_STYLE.type === 'maplibre-style') {
+    return ACTIVE_MAP_STYLE.maplibreStyleUrl;
+  }
+
+  return {
+    version: 8,
+    sources: {
+      basemap: {
+        type: 'raster',
+        tiles: ACTIVE_MAP_STYLE.maplibreTiles,
+        tileSize: 256,
+        attribution: ACTIVE_MAP_STYLE.attribution
+      }
+    },
+    layers: [
+      {
+        id: 'basemap',
+        type: 'raster',
+        source: 'basemap'
+      }
+    ]
   };
 }
 

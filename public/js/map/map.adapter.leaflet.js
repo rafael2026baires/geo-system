@@ -2,6 +2,7 @@
 // Adapter Leaflet para GEO-SYSTEM / TwyBox
 // Objetivo: que la app no dependa directamente de L.*
 
+import { ACTIVE_MAP_STYLE } from './map.styles.js';
 
 // =========================================================
 // 1) MAPA BASE / INICIALIZACIÓN
@@ -18,9 +19,9 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
 
 export function createTileLayer(map) {
   const baseLayer = L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    ACTIVE_MAP_STYLE.leafletTiles,
     {
-      attribution: '© OpenStreetMap © CARTO',
+      attribution: ACTIVE_MAP_STYLE.attribution || '',
       updateWhenZooming: false,
       updateWhenIdle: true,
       keepBuffer: 2
