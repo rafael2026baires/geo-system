@@ -30,8 +30,14 @@ let lastFloatingServerPoint = null;
 let activeUnitId = null;
 
 let lastPoint = null;
+let lastRealtimeData = null;
 
 const FLOATING_ANIMATION_MIN_ZOOM = 15;
+
+export function setFloatingRealtimeData(data) {
+  lastRealtimeData = data;
+  renderFloatingClients();
+}
 
 function closeFocusPanelArea() {
   const focusPanel = document.getElementById('focus-panel');
@@ -150,6 +156,215 @@ function clearFloatingTrackingState() {
   lastPoint = null;
 }
 
+const FLOATING_CLIENTS_SOURCE_ID = 'geo-floating-clients-source';
+const FLOATING_CLIENT_RADIUS_FILL_LAYER_ID = 'geo-floating-clients-radius-fill';
+const FLOATING_CLIENT_RADIUS_LINE_LAYER_ID = 'geo-floating-clients-radius-line';
+const FLOATING_CLIENT_POINTS_LAYER_ID = 'geo-floating-clients-points';
+
+const FLOATING_CLIENT_RADIUS_METERS = 70;
+
+let floatingClientsLayersReady = false;
+let pendingFloatingClientsFeatureCollection = null;
+
+function getCssVar(name, fallback) {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+
+  return value || fallback;
+}
+
+function createFloatingClientCirclePolygon(lng, lat, radiusMeters, points = 64) {
+  const coords = [];
+
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * Math.PI * 2;
+
+    const dx = radiusMeters * Math.cos(angle);
+    const dy = radiusMeters * Math.sin(angle);
+
+    const pointLng = lng + (dx / (111320 * Math.cos(lat * Math.PI / 180)));
+    const pointLat = lat + (dy / 110540);
+
+    coords.push([pointLng, pointLat]);
+  }
+
+  return coords;
+}
+
+function findFloatingActiveUnit() {
+  if (!lastRealtimeData?.units || !activeUnitId) return null;
+
+  return lastRealtimeData.units.find(u =>
+    String(u.unit_id) === String(activeUnitId) ||
+    String(u.vehicle_id) === String(activeUnitId)
+  );
+}
+
+function buildFloatingClientsFeatureCollection() {
+  const unit = findFloatingActiveUnit();
+
+  const radiusColor = getCssVar('--map-client-circle-color', '#00e5ff');
+  const doneColor = getCssVar('--map-client-done-color', '#22c55e');
+  const pendingColor = getCssVar('--map-client-pending-color', '#f97316');
+
+  const features = [];
+
+  if (!unit?.clients || unit.clients.length === 0) {
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  unit.clients.forEach(client => {
+    if (client.lat == null || client.lng == null) return;
+
+    const lat = client.lat;
+    const lng = client.lng;
+    const pointColor = client.status === 40 ? doneColor : pendingColor;
+
+    features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          createFloatingClientCirclePolygon(lng, lat, FLOATING_CLIENT_RADIUS_METERS)
+        ]
+      },
+      properties: {
+        kind: 'radius',
+        color: radiusColor
+      }
+    });
+
+    features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [lng, lat]
+      },
+      properties: {
+        kind: 'point',
+        color: pointColor
+      }
+    });
+  });
+
+  return {
+    type: 'FeatureCollection',
+    features
+  };
+}
+
+function ensureFloatingClientsLayers() {
+  const map = floatingMap;
+  if (!map || floatingClientsLayersReady) return;
+
+  if (!map.loaded()) {
+    map.once('load', () => {
+      ensureFloatingClientsLayers();
+
+      if (pendingFloatingClientsFeatureCollection) {
+        updateFloatingClientsSource(pendingFloatingClientsFeatureCollection);
+        pendingFloatingClientsFeatureCollection = null;
+      }
+    });
+
+    return;
+  }
+
+  if (!map.getSource(FLOATING_CLIENTS_SOURCE_ID)) {
+    map.addSource(FLOATING_CLIENTS_SOURCE_ID, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: []
+      }
+    });
+  }
+
+  if (!map.getLayer(FLOATING_CLIENT_RADIUS_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: FLOATING_CLIENT_RADIUS_FILL_LAYER_ID,
+      type: 'fill',
+      source: FLOATING_CLIENTS_SOURCE_ID,
+      filter: ['==', ['get', 'kind'], 'radius'],
+      paint: {
+        'fill-color': ['get', 'color'],
+        'fill-opacity': 0.2
+      }
+    });
+  }
+
+  if (!map.getLayer(FLOATING_CLIENT_RADIUS_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: FLOATING_CLIENT_RADIUS_LINE_LAYER_ID,
+      type: 'line',
+      source: FLOATING_CLIENTS_SOURCE_ID,
+      filter: ['==', ['get', 'kind'], 'radius'],
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': 0.5,
+        'line-opacity': 0.4
+      }
+    });
+  }
+
+  if (!map.getLayer(FLOATING_CLIENT_POINTS_LAYER_ID)) {
+    map.addLayer({
+      id: FLOATING_CLIENT_POINTS_LAYER_ID,
+      type: 'circle',
+      source: FLOATING_CLIENTS_SOURCE_ID,
+      filter: ['==', ['get', 'kind'], 'point'],
+      paint: {
+        'circle-radius': 2,
+        'circle-color': ['get', 'color'],
+        'circle-opacity': 0.7,
+        'circle-stroke-color': ['get', 'color'],
+        'circle-stroke-width': 1,
+        'circle-stroke-opacity': 0.8
+      }
+    });
+  }
+
+  floatingClientsLayersReady = true;
+}
+
+function updateFloatingClientsSource(featureCollection) {
+  if (!floatingMap) return;
+
+  const source = floatingMap.getSource(FLOATING_CLIENTS_SOURCE_ID);
+
+  if (!source) {
+    pendingFloatingClientsFeatureCollection = featureCollection;
+    return;
+  }
+
+  source.setData(featureCollection);
+}
+
+function renderFloatingClients() {
+  if (!floatingMap || !activeUnitId || !lastRealtimeData?.units) return;
+
+  const featureCollection = buildFloatingClientsFeatureCollection();
+
+  ensureFloatingClientsLayers();
+
+  if (!floatingClientsLayersReady) {
+    pendingFloatingClientsFeatureCollection = featureCollection;
+    return;
+  }
+
+  updateFloatingClientsSource(featureCollection);
+}
+
+
+
+
+
+
+
 function detachFloatingWindow(el) {
   el.classList.add('floating-detached');
 
@@ -254,6 +469,7 @@ export function updateFloating(markersRef, dt = 0) {
     lastFloatingServerPoint = p;
 
     lastPoint = p;
+    renderFloatingClients();
     panMapTo(floatingMap, p);
     return;
   }

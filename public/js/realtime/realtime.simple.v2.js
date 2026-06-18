@@ -2,7 +2,7 @@ import { updateVehicleMarkerSize } from '../common/helpers.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
 import { renderSummaryFromBackend } from '../grid/grid.render.js';
 import { initCameraControl, updateFollow, hasFollow  } from '../map/map.camera.control.js';
-import { updateFloating } from '../map/map.floating.js';
+import { updateFloating, setFloatingRealtimeData } from '../map/map.floating.js';
 import { renderClients } from '../map/map.clients.js';
 import { renderRealtimeDashboard } from './realtime.dashboard.render.js';
 import { processUnit } from './realtime.unit.processor.js';
@@ -36,6 +36,7 @@ export function runRealtimeV2({ map, layer, url }) {
         }
         
         renderClients(map, json);
+        setFloatingRealtimeData(json);
         
         if (!json || !json.units) return;
         json.units.forEach(unit => {
