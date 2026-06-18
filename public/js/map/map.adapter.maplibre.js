@@ -3,6 +3,7 @@
 // Todavía NO activar desde map.adapter.js.
 
 import { ACTIVE_MAP_STYLE } from './map.styles.js';
+import { applyMapStyleOverrides } from './map.style.overrides.js';
 
 export function createLeafletMap(containerId, defaultLat, defaultLng) {
   const map = new maplibregl.Map({  
@@ -18,7 +19,11 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
       showCompass: false
   }), 'top-right');
 
-  return map;  
+  map.on('style.load', () => {
+    applyMapStyleOverrides(map);
+  });
+
+  return map; 
 
 }
 
