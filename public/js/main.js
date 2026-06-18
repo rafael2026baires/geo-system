@@ -15,7 +15,8 @@ import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag,
          enableFloatingResize, enableFloatingClose, enableFloatingDetach, refreshFloatingMapView } 
          from './map/map.floating.js';
 import { saveFloatingStatePatch } from './map/map.floating.state.js';    
-import { createLayerGroup } from './map/map.adapter.leaflet.js';     
+import { createLayerGroup } from './map/map.adapter.js';     
+import { initMapCameraUI } from './map/map.camera.ui.js';
 
 let TENANT_ID = null;
 let realtimeInstance = null;
@@ -62,6 +63,7 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
     
     const { map, replayLayer, realtimeLayer } = initMap('map', defaultLat, defaultLng, baseRadiusM); //initMap(defaultLat, defaultLng, baseRadiusM);
     window.mainMap = map;
+    initMapCameraUI(map);
 
     initFloatingMap(defaultLat, defaultLng, baseRadiusM);
     enableFloatingDrag();

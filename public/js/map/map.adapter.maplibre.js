@@ -7,8 +7,8 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     container: containerId,
     center: [defaultLng, defaultLat],
     zoom: 12,
-    pitch: 45,
-    bearing: 0,
+    pitch: 55,
+    bearing: -18,
     style: {
       version: 8,
       sources: {
@@ -113,6 +113,48 @@ export function setMapCenter(map, position, zoom) {
     zoom
   });
 }
+
+
+export function getMapBearing(map) {
+  return map.getBearing();
+}
+
+export function getMapPitch(map) {
+  return map.getPitch();
+}
+
+export function setMapBearing(map, bearing) {
+  map.easeTo({
+    bearing,
+    duration: 400
+  });
+}
+
+export function setMapPitch(map, pitch) {
+  map.easeTo({
+    pitch,
+    duration: 400
+  });
+}
+
+export function setMapCamera(map, options = {}) {
+  map.easeTo({
+    center: options.center,
+    zoom: options.zoom,
+    pitch: options.pitch,
+    bearing: options.bearing,
+    duration: options.duration ?? 500
+  });
+}
+
+export function resetMapCamera(map) {
+  map.easeTo({
+    pitch: 55,
+    bearing: -18,
+    duration: 500
+  });
+}
+
 
 export function invalidateMapSize(map) {
   map.resize();
