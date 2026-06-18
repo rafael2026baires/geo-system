@@ -30,7 +30,7 @@ export function initMapCameraUI(map) {
     const action = btn.dataset.camera;
 
     if (action === 'pitch-up') {
-      setMapPitch(map, Math.min(75, getMapPitch(map) + 10));
+      setMapPitch(map, Math.min(80, getMapPitch(map) + 10));
     }
 
     if (action === 'pitch-down') {

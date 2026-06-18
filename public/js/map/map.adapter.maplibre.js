@@ -8,6 +8,7 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     center: [defaultLng, defaultLat],
     zoom: 12,
     pitch: 55,
+    maxPitch: 80,
     bearing: -18,
     style: {
       version: 8,
