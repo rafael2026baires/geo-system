@@ -3,7 +3,7 @@
 // Todavía NO activar desde map.adapter.js.
 
 export function createLeafletMap(containerId, defaultLat, defaultLng) {
-  return new maplibregl.Map({
+  const map = new maplibregl.Map({  
     container: containerId,
     center: [defaultLng, defaultLat],
     zoom: 12,
@@ -32,6 +32,12 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
       ]
     }
   });
+  map.addControl(new maplibregl.NavigationControl({
+      showCompass: false
+  }), 'top-right');
+
+  return map;  
+
 }
 
 export function createTileLayer(map) {
@@ -81,6 +87,13 @@ export function setMapMinZoom(map, zoom) {
 }
 
 export function panMapTo(map, position) {
+  if (
+    typeof map.isZooming === 'function' &&
+    map.isZooming()
+  ) {
+    return;
+  }
+
   map.jumpTo({
     center: [position.lng, position.lat],
     zoom: map.getZoom()
@@ -121,26 +134,177 @@ export function createBoundsFromUnits(units) {
   const lngs = units.map(u => u.lng);
   const lats = units.map(u => u.lat);
 
-  return [
+  return new maplibregl.LngLatBounds(
     [Math.min(...lngs), Math.min(...lats)],
     [Math.max(...lngs), Math.max(...lats)]
-  ];
+  );
 }
 
 export function createBaseCircle(map, defaultLat, defaultLng, baseRadiusM) {
-  // Pendiente: círculo base real con source/layer MapLibre.
-  return null;
+  return createMapCircle(
+    map,
+    { lat: defaultLat, lng: defaultLng },
+    {
+      radius: baseRadiusM,
+      color: getComputedStyle(document.documentElement)
+        .getPropertyValue('--map-base-circle-border-color')
+        .trim() || '#00e5ff',
+      fillColor: getComputedStyle(document.documentElement)
+        .getPropertyValue('--map-base-circle-fill-color')
+        .trim() || '#00e5ff',
+      fillOpacity: 0.7,
+      opacity: 0.9,
+      weight: 2
+    }
+  );
 }
 
-export function createMapCircle(layer, position, options) {
-  // Pendiente: círculos cliente reales en MapLibre.
-  return null;
+
+export function createMapCircle(layer, position, options = {}) {
+  const map = layer.map || layer;
+
+  const id = `circle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const sourceId = `${id}-source`;
+  const fillLayerId = `${id}-fill`;
+  const lineLayerId = `${id}-line`;
+
+  const radiusMeters = options.radius || 80;
+  const points = 64;
+
+  const coords = [];
+
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * Math.PI * 2;
+
+    const dx = radiusMeters * Math.cos(angle);
+    const dy = radiusMeters * Math.sin(angle);
+
+    const lng = position.lng + (dx / (111320 * Math.cos(position.lat * Math.PI / 180)));
+    const lat = position.lat + (dy / 110540);
+
+    coords.push([lng, lat]);
+  }
+
+  const feature = {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coords]
+    },
+    properties: {}
+  };
+
+  function add() {
+    if (map.getSource(sourceId)) return;
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: feature
+    });
+
+    map.addLayer({
+      id: fillLayerId,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': options.fillColor || options.color || '#00e5ff',
+        'fill-opacity': options.fillOpacity ?? 0.12
+      }
+    });
+
+    map.addLayer({
+      id: lineLayerId,
+      type: 'line',
+      source: sourceId,
+      paint: {
+        'line-color': options.color || '#00e5ff',
+        'line-width': options.weight || 1,
+        'line-opacity': options.opacity ?? 0.7
+      }
+    });
+  }
+
+  const item = {
+    remove() {
+      if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+      if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    }
+  };
+
+  if (map.loaded()) {
+    add();
+  } else {
+    map.once('load', add);
+  }
+
+  if (typeof layer.add === 'function') {
+    layer.add(item);
+  }
+
+  return item;
 }
 
-export function createMapCircleMarker(layer, position, options) {
-  // Pendiente: puntos cliente reales en MapLibre.
-  return null;
+export function createMapCircleMarker(layer, position, options = {}) {
+  const map = layer.map || layer;
+
+  const id = `circle-marker-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const sourceId = `${id}-source`;
+  const layerId = `${id}-layer`;
+
+  const feature = {
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: [position.lng, position.lat]
+    },
+    properties: {}
+  };
+
+  function add() {
+    if (map.getSource(sourceId)) return;
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: feature
+    });
+
+    map.addLayer({
+      id: layerId,
+      type: 'circle',
+      source: sourceId,
+      paint: {
+        'circle-radius': options.radius || 5,
+        'circle-color': options.fillColor || options.color || '#00e5ff',
+        'circle-opacity': options.fillOpacity ?? 0.9,
+        'circle-stroke-color': options.color || '#ffffff',
+        'circle-stroke-width': options.weight || 1,
+        'circle-stroke-opacity': options.opacity ?? 0.8
+      }
+    });
+  }
+
+  const item = {
+    remove() {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    }
+  };
+
+  if (map.loaded()) {
+    add();
+  } else {
+    map.once('load', add);
+  }
+
+  if (typeof layer.add === 'function') {
+    layer.add(item);
+  }
+
+  return item;
 }
+
+
 
 export function clearLayerGroup(layerGroup) {
   layerGroup?.clearLayers?.();
@@ -174,18 +338,22 @@ export function createDivIcon(options) {
   };
 }
 
-export function createMapMarker(layer, position, options = {}) {
+export function createMapMarker(layerOrMap, position, options = {}) {
+  const targetMap = layerOrMap.map || layerOrMap;
+
   const marker = new maplibregl.Marker({
     element: options.icon?.element,
     anchor: 'center'
   })
     .setLngLat([position.lng, position.lat])
-    .addTo(layer.map);
+    .addTo(targetMap);
 
   marker.__geoPosition = { lat: position.lat, lng: position.lng };
   marker.__geoElement = options.icon?.element || marker.getElement();
 
-  layer.add(marker);
+  if (typeof layerOrMap.add === 'function') {
+    layerOrMap.add(marker);
+  }
 
   return marker;
 }
@@ -203,12 +371,22 @@ export function setMarkerPosition(marker, position) {
 }
 
 export function setMarkerIcon(marker, icon) {
-  const oldEl = marker.getElement();
-  if (!oldEl || !icon?.element) return;
+  const el = marker.getElement();
+  if (!el || !icon?.element) return;
 
-  oldEl.innerHTML = icon.element.innerHTML;
-  oldEl.className = icon.element.className;
-  marker.__geoElement = oldEl;
+  el.innerHTML = icon.element.innerHTML;
+  el.className = icon.element.className;
+
+  el.style.width = `${icon.iconSize?.[0] || 20}px`;
+  el.style.height = `${icon.iconSize?.[1] || 20}px`;
+
+  const innerImg = el.querySelector('.veh-img');
+  if (innerImg) {
+    innerImg.style.width = '100%';
+    innerImg.style.height = '100%';
+  }
+
+  marker.__geoElement = el;
 }
 
 export function setMarkerOpacity(marker, opacity) {
