@@ -4,6 +4,7 @@
 
 import { ACTIVE_MAP_STYLE } from './map.styles.js';
 import { applyMapStyleOverrides } from './map.style.overrides.js';
+import { installMissingIconHandler } from './map.style.missing-icons.js';
 
 export function createLeafletMap(containerId, defaultLat, defaultLng) {
   const map = new maplibregl.Map({  
@@ -15,6 +16,7 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     bearing: -18,
     style: getMapLibreStyle()
   });
+  installMissingIconHandler(map);
   map.addControl(new maplibregl.NavigationControl({
       showCompass: false
   }), 'top-right');

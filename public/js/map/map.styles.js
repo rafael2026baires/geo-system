@@ -48,4 +48,5 @@ export const MAP_STYLE_OPENFREEMAP_LIBERTY = {
 };
 
 // Estilo activo actual
-export const ACTIVE_MAP_STYLE = MAP_STYLE_CARTO_DARK;
+//export const ACTIVE_MAP_STYLE = MAP_STYLE_CARTO_DARK;
+export const ACTIVE_MAP_STYLE = MAP_STYLE_OPENFREEMAP_LIBERTY;

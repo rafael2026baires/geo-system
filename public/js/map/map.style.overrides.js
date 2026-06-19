@@ -5,7 +5,15 @@
 export const MAP_THEME_DEFAULT = {
   id: 'default',
   label: 'Default',
-  layers: []
+  layers: [
+    { id: 'poi_r20', layout: { visibility: 'none' } },
+    { id: 'poi_r7', layout: { visibility: 'none' } },
+    { id: 'poi_r1', layout: { visibility: 'none' } },
+    { id: 'poi_transit', layout: { visibility: 'none' } },
+    { id: 'highway-shield-non-us', layout: { visibility: 'none' } },
+    { id: 'highway-shield-us-interstate', layout: { visibility: 'none' } },
+    { id: 'road_shield_us', layout: { visibility: 'none' } }
+  ]
 };
 
 export const MAP_THEME_COMMERCIAL_DARK = {

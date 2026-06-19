@@ -15,7 +15,7 @@ import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag,
          enableFloatingResize, enableFloatingClose, enableFloatingDetach, refreshFloatingMapView } 
          from './map/map.floating.js';
 import { saveFloatingStatePatch } from './map/map.floating.state.js';    
-import { createLayerGroup } from './map/map.adapter.js';     
+import { createLayerGroup, invalidateMapSize } from './map/map.adapter.js';     
 import { initMapCameraUI } from './map/map.camera.ui.js';
 
 let TENANT_ID = null;
@@ -531,7 +531,7 @@ if (focusPanel && focusResizer) {
 function refreshMainMapView() {
   if (!window.mainMap) return;
 
-  window.mainMap.invalidateSize();
+  invalidateMapSize(window.mainMap);
 
   if (
     window.AppState?.mainViewMode === 'FIT_ALL' &&
