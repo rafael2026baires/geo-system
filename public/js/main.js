@@ -1,4 +1,5 @@
-import { animateMove, pollLastPoint, createVehicleMarker, clearReplay } from './common/helpers.js';
+import { animateMove, pollLastPoint, clearReplay } from './common/helpers.js';
+import { createVehicleMarker } from './map/markers/vehicle.marker.js';
 import { loadFleetFromDB } from './fleet/fleet.data.js';
 import { initMap } from './map/map.init.js';
 import { createModeHandlers } from './modes/modes.handlers.js';
@@ -17,6 +18,7 @@ import { initFloatingMap, closeFloating, openFloating, enableFloatingDrag,
 import { saveFloatingStatePatch } from './map/map.floating.state.js';    
 import { createLayerGroup, invalidateMapSize } from './map/map.adapter.js';     
 import { initMapCameraUI } from './map/map.camera.ui.js';
+import { initMapStyleUI } from './map/map.style.ui.js';
 
 let TENANT_ID = null;
 let realtimeInstance = null;
@@ -64,6 +66,7 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
     const { map, replayLayer, realtimeLayer } = initMap('map', defaultLat, defaultLng, baseRadiusM); //initMap(defaultLat, defaultLng, baseRadiusM);
     window.mainMap = map;
     initMapCameraUI(map);
+    initMapStyleUI(map);
 
     initFloatingMap(defaultLat, defaultLng, baseRadiusM);
     enableFloatingDrag();

@@ -1,9 +1,9 @@
-import { createVehicleMarker } from '../common/helpers.js';
 import { upsertFleetState } from '../fleet/fleet.state.store.mjs';
 import { updateOrientation } from '../realtime/orientation.engine.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
 import { closeFloating } from '../map/map.floating.js';
-import { getMapZoom, setMarkerOpacity, removeLayerFromGroup} from '../map/map.adapter.js';
+import { getMapZoom } from '../map/map.adapter.js';
+import { createVehicleMarker, setVehicleMarkerOpacity, removeVehicleMarkerFromLayer} from '../map/markers/vehicle.marker.js';
 
 const VEHICLE_ANIMATION_MIN_ZOOM = 18;
 
@@ -15,9 +15,9 @@ function applyMarkerOpacity(marker, unit) {
   if (!marker) return;
 
   if (unit.tech_state === 'OFFLINE') {
-    setMarkerOpacity(marker, unit.is_visible_on_map ? 0.3 : 0);
+    setVehicleMarkerOpacity(marker, unit.is_visible_on_map ? 0.3 : 0);
   } else {
-    setMarkerOpacity(marker, unit.is_visible_on_map ? 1 : 0);
+    setVehicleMarkerOpacity(marker, unit.is_visible_on_map ? 1 : 0);
   }
 }
 
@@ -41,7 +41,7 @@ function removeUnitMarker({ unit, layer, markers, motions }) {
   const marker = markers.get(unit.unit_id);
   if (!marker) return;
 
-  removeLayerFromGroup(layer, marker);
+  removeVehicleMarkerFromLayer(layer, marker);
   markers.delete(unit.unit_id);
   motions.delete(unit.unit_id);
 }

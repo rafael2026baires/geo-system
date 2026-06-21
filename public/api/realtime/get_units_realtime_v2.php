@@ -1,24 +1,5 @@
 <?php
-// --------------------- configuración sql  -----------------------
-/*
-orders:
- PENDING = 10
- ASSIGNED = 20
- LOADED = 30
- DELIVERED = 40
- CANCELLED = 50
----------------------
-order_assignments:
- ACTIVE = 1
- LOADED = 30
- SUPERSEDED = 50
----------------------
-trips:
- PLANNED = 10
- IN_PROGRESS = 30 
- COMPLETED = 40
- CANCELLED = 50
-*/
+
 // --------------------------------------------------------------
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/services/TechStateService.php';
@@ -121,6 +102,7 @@ if (!$gridContextLoadedFromRedis) {
         
         if (!isset($ordersMap[$vehicleId])) {
             $ordersMap[$vehicleId] = [
+                'P' => 0,
                 'A' => 0,
                 'C' => 0,
                 'E' => 0,
@@ -131,6 +113,10 @@ if (!$gridContextLoadedFromRedis) {
         } 
         
         $status = (int)$r['status'];
+
+        if ($status === 10) {
+            $ordersMap[$vehicleId]['P']++;
+        }
         
         if ($status === 20) {
             $ordersMap[$vehicleId]['A']++;
@@ -242,9 +228,12 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
     // --------------------------------------------------------------------------
     $redisKey = "stopped_since:$unitId";
 
+    // TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+    /*
     $obdKey = "obd:$tenantId:$vehicleId";
     $obdRaw = $useRedis ? $redis->get($obdKey) : null;
     $obd = $obdRaw ? json_decode($obdRaw, true) : null;
+    */
 
     $stoppedSinceRedis = $useRedis ? $redis->get($redisKey) : null;    
     
@@ -286,7 +275,33 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
             'tech_state' => 'OFFLINE',
             'stopped_since' => null
         ];
+    }
+    
+    // ---------------- SEÑAL STATE ----------------
+    if ($serverTs === null || $signalAge === null) {
+        $signalState = 'SIGNAL_NODATA';
+    } else if ($signalAge > $config['offline_ttl_sec']) {
+        $signalState = 'SIGNAL_ALERT';
+    } else if ($signalAge > $config['stale_ttl_sec']) {
+        $signalState = 'SIGNAL_NODATA';
+    } else {
+        $signalState = 'SIGNAL_OK';
     }    
+
+    // ---------------- ACTIVITY STATE ----------------
+    if ($tech['tech_state'] === 'MOVING') {
+        $activityState = 'ACTIVITY_MOVING';
+    } else if (
+        $tech['tech_state'] === 'STOPPED' ||
+        $tech['tech_state'] === 'STOPPED_MEDIUM'
+    ) {
+        $activityState = 'ACTIVITY_STOPPED';
+    } else if ($tech['tech_state'] === 'STOPPED_LONG') {
+        $activityState = 'ACTIVITY_ALERT';
+    } else {
+        $activityState = 'ACTIVITY_NONE';
+    }    
+    
     
     if ($useRedis) {
         if ($tech['tech_state'] === 'STOPPED' 
@@ -302,6 +317,7 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
     }   
     //-------------------------  nuevo   ----------------------------------------  
     $orders = $ordersMap[$vehicleId] ?? [
+        'P' => 0,
         'A' => 0,
         'C' => 0,
         'E' => 0,
@@ -309,12 +325,14 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
         'last_delivered_at' => null
     ];
     
+    $P = $orders['P'] ?? 0;
     $A = $orders['A'];
     $C = $orders['C'];
     $E = $orders['E'];
     
-    $total = $A + $C + $E;
-    $pendingDelivery = $total - $E;
+    $in_operation = $A + $C + $E;
+    $total = $in_operation;
+    $pendingDelivery = $C;
     
     $lastLoadAge = $orders['last_loaded_at']
         ? $now - strtotime($orders['last_loaded_at'])
@@ -335,7 +353,9 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
         'is_visible_on_map' => ($active === 1 && !$enBase),
 
         // --- VISIBILIDAD / ESTADO TÉCNICO
-        'active' => $active,
+        'active' => $active,        
+        'signal_state' => $signalState,
+        'activity_state' => $activityState,
         'tech_state' => $tech['tech_state'],
         'signal_age' => $signalAge,
 
@@ -350,7 +370,8 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
         'state_since' => $serverTs,
         
         // --- PEDIDOS (CORE A/C/E) ---
-        'orders_total' => $total,
+        'orders_total' => $total,        
+        'orders_in_operation' => $in_operation,
         'orders_assigned' => $A,
         'orders_loaded' => $C,
         'orders_delivered' => $E,
@@ -363,6 +384,8 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
         
         'clients' => $ordersMap[$vehicleId]['clients'] ?? [],
 
+        // TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+        /*
         'obd' => [
             'fuel_level' => $obd['fuel_level'] ?? null,
             'rpm' => $obd['rpm'] ?? null,
@@ -372,7 +395,8 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
             'engine_on' => $obd['engine_on'] ?? null,
             'client_ts' => $obd['client_ts'] ?? null,
             'server_ts' => $obd['server_ts'] ?? null
-        ],        
+        ],
+        */       
         
         // --- OPCIONAL (NO ahora, pero ya definido)
         //'next_trip_orders' => $nextTripCount   
@@ -386,28 +410,57 @@ function resolveSection($u) {
     if ($u['in_client']) return 'client';
     return 'trip';
 }
-// ------------------------------------------------------------------
-$summary = [
-    'idle' => 0,
-    'delivering' => 0,
-    'client' => 0, 
-    'inactive' => 0
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+$kpiSummary = [
+    'vehicles' => [
+        'total' => count($activeMap),
+        'active' => 0,
+        'inactive' => 0,
+        'in_base' => 0,
+        'in_street' => 0,
+        'in_client' => 0,
+        // --------------------------------
+        // KPI Señal
+        'signal_ok' => 0,
+        'signal_nodata' => 0,
+        'signal_alert' => 0,  
+        // --------------------------------
+        // KPI Actividad
+        'activity_moving' => 0,
+        'activity_stopped' => 0,
+        'activity_alert' => 0
+        // --------------------------------
+
+    ],
+    'orders' => [        
+        'in_operation' => 0,
+        'assigned' => 0,
+        'loaded' => 0,
+        'pending_load' => 0,
+        'delivered' => 0,
+        'pending_delivery' => 0
+    ]
+
+    // TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+    /*
+    'telemetry' => [
+        'with_obd' => 0,
+        'engine_on' => 0,
+        'fuel_ok' => 0,
+        'fuel_low' => 0,
+        'temp_ok' => 0,
+        'temp_high' => 0
+    ]
+    */    
 ];
 
-foreach ($units as $u) {
-    $s = resolveSection($u);
+// TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+/*
+$fuelLowPct = 20;
+$engineTempHigh = 100;
+*/
 
-    if ($s === 'inactive') {
-        $summary['inactive']++;
-    } else if ($s === 'base') {
-        $summary['idle']++;
-    } else if ($s === 'client') {
-        $summary['client']++;
-    } else if ($s === 'trip') {
-        $summary['delivering']++;
-    }
-}
-// ------------------------------------------------------------------
 $ordersSummary = [
     'A' => 0,
     'C' => 0,
@@ -415,11 +468,116 @@ $ordersSummary = [
 ];
 
 foreach ($units as $u) {
-    $ordersSummary['A'] += $u['orders_assigned'];
-    $ordersSummary['C'] += $u['orders_loaded'];
-    $ordersSummary['E'] += $u['orders_delivered'];
+
+    // ---------------- PEDIDOS KPI ACUMULADOS ----------------    
+    $in_operation = (int)$u['orders_in_operation'];
+
+    $A = (int)$u['orders_assigned'];   // status 20
+    $C = (int)$u['orders_loaded'];     // status 30
+    $E = (int)$u['orders_delivered'];  // status 40
+
+    $ordersSummary['A'] += $A;
+    $ordersSummary['C'] += $C;
+    $ordersSummary['E'] += $E;
+
+    $assignedKpi = $A + $C + $E;
+    $loadedKpi = $C + $E;
+    $deliveredKpi = $E;
+
+    $pendingLoadKpi = $assignedKpi - $loadedKpi;
+    $pendingDeliveryKpi = $loadedKpi - $deliveredKpi;
+    
+    $kpiSummary['orders']['in_operation'] += $in_operation;
+    $kpiSummary['orders']['assigned'] += $assignedKpi;
+    $kpiSummary['orders']['loaded'] += $loadedKpi;
+    $kpiSummary['orders']['pending_load'] += $pendingLoadKpi;
+    $kpiSummary['orders']['delivered'] += $deliveredKpi;
+    $kpiSummary['orders']['pending_delivery'] += $pendingDeliveryKpi;
+
+    // Desde acá, solo vehículos activos
+    if ((int)$u['active'] !== 1) {
+        $kpiSummary['vehicles']['inactive']++;
+        continue;
+    }
+
+    // ---------------- VEHÍCULOS ----------------
+    $kpiSummary['vehicles']['active']++;
+
+    if (!empty($u['in_base'])) {
+        $kpiSummary['vehicles']['in_base']++;
+    } else if (!empty($u['in_client'])) {
+        $kpiSummary['vehicles']['in_client']++;
+    } else {
+        $kpiSummary['vehicles']['in_street']++;
+    }
+
+    if ($u['activity_state'] === 'ACTIVITY_MOVING') {
+        $kpiSummary['vehicles']['activity_moving']++;
+    }
+
+    if ($u['activity_state'] === 'ACTIVITY_STOPPED') {
+        $kpiSummary['vehicles']['activity_stopped']++;
+    }
+
+    if ($u['activity_state'] === 'ACTIVITY_ALERT') {
+        $kpiSummary['vehicles']['activity_alert']++;
+    }
+    // --------------------------------------------------------
+
+    if ($u['signal_state'] === 'SIGNAL_OK') {
+        $kpiSummary['vehicles']['signal_ok']++;
+    }
+
+    if ($u['signal_state'] === 'SIGNAL_NODATA') {
+        $kpiSummary['vehicles']['signal_nodata']++;
+    }
+
+    if ($u['signal_state'] === 'SIGNAL_ALERT') {
+        $kpiSummary['vehicles']['signal_alert']++;
+    }
+
+    
+    // TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
+    /*
+    // ---------------- TELEMETRÍA ----------------
+    $obd = $u['obd'] ?? null;
+
+    if (is_array($obd) && !empty($obd['server_ts'])) {
+        $kpiSummary['telemetry']['with_obd']++;
+
+        if (!empty($obd['engine_on'])) {
+            $kpiSummary['telemetry']['engine_on']++;
+        }
+
+        if ($obd['fuel_level'] !== null) {
+            if ((float)$obd['fuel_level'] <= $fuelLowPct) {
+                $kpiSummary['telemetry']['fuel_low']++;
+            } else {
+                $kpiSummary['telemetry']['fuel_ok']++;
+            }
+        }
+
+        if ($obd['engine_temp'] !== null) {
+            if ((float)$obd['engine_temp'] >= $engineTempHigh) {
+                $kpiSummary['telemetry']['temp_high']++;
+            } else {
+                $kpiSummary['telemetry']['temp_ok']++;
+            }
+        }        
+    }
+    */    
+    
 }
-// ------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------------------------------
+// Compatibilidad temporal con gráficos actuales
+$summary = [
+    'idle' => $kpiSummary['vehicles']['in_base'],
+    'delivering' => $kpiSummary['vehicles']['in_street'],
+    'client' => $kpiSummary['vehicles']['in_client'],    
+    'inactive' => $kpiSummary['vehicles']['inactive']
+];
+// -----------------------------------------------------------------------------------------------------    
 $totalVehicles = count($activeMap);
 // ------------------------------------------------------------------
 // órden del vector
@@ -435,6 +593,7 @@ usort($units, function($a, $b) {
 // ------------------------------------------------------------------
 echo json_encode([
     'units' => $units,
+    'kpi_summary' => $kpiSummary,
     'summary' => $summary,
     'orders_summary' => $ordersSummary,
     'total_vehicles' => $totalVehicles,

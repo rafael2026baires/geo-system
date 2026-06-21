@@ -1,71 +1,79 @@
-#charts-summary {
-  height: 200px;
-  margin-bottom: 10px;
-  margin-left: 0.5%;
-  width: 100%;  
-
-  border: 1px solid #3D3D3D;
-  border-radius: 6px;
-  padding: 8px;
-
-  overflow: hidden;
-  flex: 0 0 200px;
-}
-
-.charts-scroll {
-  width: 100%;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
-}
-
-.charts-track {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: max-content;
-}
+/* =========================================================
+   1) GRÁFICOS KPI GRANDES
+   Ubicación / Pedidos
+   Viven dentro de sus mini contenedores KPI.
+========================================================= */
 
 .chart-card {
-  height: 180px;
-  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+  
+/* =========================================================
+   2) BARRAS KPI INTERNAS
+   Usadas por Señal y Actividad dentro del propio card.
+========================================================= */
+
+.kpi-bar-track {
+  height: 8px;
+  border: 1px solid var(--kpi-bar-border);
+  border-radius: 6px;
+  overflow: hidden;  
+  background: var(--kpi-bar-empty);
+  box-sizing: border-box;
 }
 
-#chart-pedidos-wrap {
-  width: 430px;
+.kpi-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 6px;
+  transition: width 1.5s ease;
 }
 
-#chart-vehiculos-wrap {
-  width: 360px;
+/* =========================================================
+   3) COLORES DE ESTADO
+   Compartidos por barras KPI.
+========================================================= */
+
+/*
+.bar-ok {
+  background: #4CAF50;
+}
+.bar-nodata {
+  background: #8A8A8A;
+}
+.bar-alert {
+  background: #FFD700;
+}
+*/
+
+.bar-data {
+  background: var(--kpi-bar-data);
+}
+.bar-entrega {
+  background: var(--kpi-bar-delivery);
 }
 
-#chart-vehiculos-3d,
-#chart-pedidos-3d {
-  height: 180px;
+/* =========================================================
+   4) GRÁFICO LINEAL - RITMO EN CALLE
+   Gráfico principal del contenedor Detalle.
+   Muestra evolución operativa en calle.
+========================================================= */
+
+.street-rhythm-chart-wrap,
+.street-accum-chart-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  box-sizing: border-box;
+  padding: 4px 6px 2px 6px;
 }
 
-
-/* ---------------------  Scroll horizontal de gráficos ----------------------- */
-.charts-scroll::-webkit-scrollbar {
-  height: 4px;
+#streetRhythmChart,
+#streetAccumChart {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
-
-.charts-scroll::-webkit-scrollbar-track {
-  background: #2B201D;
-}
-
-.charts-scroll::-webkit-scrollbar-thumb {
-  background: #5C5C5C;
-  border-radius: 8px;
-}
-
-.charts-scroll::-webkit-scrollbar-thumb:hover {
-  background: #717171;
-}
-
-.charts-scroll::-webkit-scrollbar-corner {
-  background: #2B201D;
-}
-/* ---------------------------------------------------------------------------- */

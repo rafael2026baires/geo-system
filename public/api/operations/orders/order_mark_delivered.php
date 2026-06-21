@@ -41,13 +41,15 @@ try {
     $tripId = (int)$order['trip_id'];
     $vehicleId = (int)$order['vehicle_id'];
 
+    $now = date('Y-m-d H:i:s');
+
     $stmt = $pdo->prepare("
         UPDATE orders
         SET status = 40,
-            delivered_at = NOW()
+            delivered_at = ?
         WHERE id = ? AND tenant_id = ?
     ");
-    $stmt->execute([$orderId, $tenantId]);
+    $stmt->execute([$now, $orderId, $tenantId]);
 
     // pendientes en el viaje
     $stmt = $pdo->prepare("
@@ -76,6 +78,7 @@ try {
 
     $pdo->commit();
     CacheInvalidationService::gridContext($tenantId);
+    CacheInvalidationService::dashboardCharts($tenantId);   
 
     json_ok([]);
 

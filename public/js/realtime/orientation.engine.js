@@ -5,7 +5,7 @@
 // NO toca labels
 // NO maneja reconexión
 
-import { getMarkerElement } from '../map/map.adapter.js';
+import { setVehicleMarkerBearing } from '../map/markers/vehicle.marker.js';
 
 const DEFAULT_ICON_OFFSET_DEG = -90; // ajustá según orientación del PNG
 
@@ -27,9 +27,7 @@ function bearingDeg(a, b) {
 }
 
 function setMarkerBearing(marker, deg) {
-  const el = marker ? getMarkerElement(marker) : null;
-  if (!el) return;
-  el.style.setProperty('--bearing', `${deg}deg`);
+  setVehicleMarkerBearing(marker, deg);
 }
 
 export function updateOrientation({

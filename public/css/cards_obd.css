@@ -1,0 +1,428 @@
+/* =========================================================
+   1) CONTENEDOR GENERAL KPI
+   Marco externo de toda la zona de cards KPI
+========================================================= */
+.kpi-summary {
+  margin: 10px 0;
+  margin-left: 0.5%;
+  width: 100%;
+
+  border: 1px solid #3D3D3D;
+  border-radius: 6px;
+  padding: 8px;
+
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.kpi-scroll {
+  width: 100%;
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   2) PANEL INTERNO KPI
+   Contenedor principal de toda la zona de KPI
+========================================================= */
+.kpi-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  gap: 8px;
+  min-height: 120px;
+  width: 100%;
+}
+
+
+/* =========================================================
+   3) LAYOUT KPI EN 4 COLUMNAS
+   Define el ancho de cada columna:
+   1) Vehículos / Señal / Actividad
+   2) Ubicación
+   3) Pedidos
+   4) Telemetría
+========================================================= */
+.kpi-columns {
+  display: grid;
+  grid-template-columns: 24% 20% 26% 26%;
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: start;
+  width: 100%;
+}
+
+.kpi-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kpi-column .kpi-block {
+  width: 100%;
+}
+
+
+/* =========================================================
+   4) MINI CONTENEDORES KPI
+   Cada bloque representa un grupo:
+   Vehículos, Señal, Actividad, Ubicación, Pedidos, Telemetría
+========================================================= */
+.kpi-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  border: 1px solid #3D3D3D;
+  background: #362C28;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+/* =========================================================
+   5) MINI CONTENEDORES KPI - BASE COMÚN
+========================================================= */
+.kpi-block {
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* =========================================================
+   5.1) ALTURAS POR TIPO DE MINI CONTENEDOR
+========================================================= */
+.kpi-block-fleet {
+  height: 8.5vh;
+}
+
+.kpi-block-signal,
+.kpi-block-activity {
+  height: 13.5vh;
+}
+
+.kpi-block-grafico1,
+.kpi-block-grafico2 { 
+  height: 16vh;
+}
+
+.kpi-block-location,
+.kpi-block-orders,
+.kpi-block-telemetry {
+  height: 23.5vh;
+}
+/* =========================================================
+   5.2) POSICIÓN ESPECIAL DEL LAYOUT KPI
+========================================================= */
+.kpi-column-status {
+  grid-row: 1 / 3;
+}
+
+
+.kpi-column-grafico1 {
+  grid-column: 1 / 3;
+  grid-row: 3;
+  align-self: start;
+}
+
+.kpi-column-grafico2 {
+  grid-column: 3 / 5;
+  grid-row: 3;
+  align-self: start;
+}
+
+/* =========================================================
+   5.3) FILA COMPACTA DE ESTADOS
+   Agrupa Señal y Actividad en una misma fila dentro
+   de la columna izquierda, sin modificar su HTML interno.
+========================================================= */
+.kpi-status-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.kpi-status-row .kpi-block-signal,
+.kpi-status-row .kpi-block-activity {
+  flex: 1;
+}
+
+
+/* =========================================================
+   6) TÍTULO DEL GRUPO KPI
+   Ejemplo: Vehículos, Señal, Actividad, Ubicación, Pedidos
+========================================================= */
+.kpi-title {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 14px;
+  opacity: 0.60;
+}
+
+.kpi-icono-titulo {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  margin-right: 4px;
+  opacity: 0.80;
+}
+
+/* =========================================================
+   7) CONTENEDOR DE CARDS DENTRO DE CADA GRUPO
+========================================================= */
+.kpi-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.kpi-block-fleet .kpi-cards {
+  justify-content: center;
+}
+
+/* =========================================================
+   8) AJUSTES DE CARDS EN UBICACIÓN Y TELEMETRÍA
+   Telemetría apila sus cards.
+   Ubicación y Telemetría usan cards al 100% del ancho disponible.
+========================================================= */
+.kpi-block-telemetry .kpi-cards {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi-block-location > .kpi-card {
+  width: 100%;
+}
+/* =========================================================
+   9) CARD BASE KPI
+   Estructura común para todos los cards.
+   El tamaño específico va en las variantes.
+========================================================= */
+.kpi-card {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+
+  border: 0.5px solid #555555;
+  border-radius: 6px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================================
+   10) TAMAÑO BASE DE CARD KPI       
+========================================================= */
+.kpi-card-normal {
+  width: 90px;
+  height: 38px;
+}
+
+/* =========================================================
+   11) CARD KPI CON BARRAS INTERNAS
+   Usado por Señal, Actividad, Ubicación y Pedidos:
+   ícono + valor + barra en cada fila.
+========================================================= */
+.kpi-card-bars {
+  width: 100%;
+  height: 78px;
+  padding: 6px 8px;
+  gap: 5px;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.kpi-bar-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.kpi-bar-info {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.kpi-bar-info .kpi-main {
+  font-size: 13px;
+  line-height: 14px;
+  text-align: left;
+}
+
+/* ---------- Ajuste compartido: Ubicación y Pedidos ---------- */
+
+.kpi-block-orders .kpi-card-bars,
+.kpi-block-location .kpi-card-bars {
+  height: 185px;
+  padding: 10px;
+  gap: 16px;
+}
+
+.kpi-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.kpi-row-title {
+  font-size: 9px;
+  line-height: 10px;
+  opacity: 0.55;
+  text-align: left;
+  padding-left: 2px;
+}
+
+.kpi-block-location .kpi-bar-row,
+.kpi-block-orders .kpi-bar-row {
+  grid-template-columns: 92px 1fr;
+}
+
+/* =========================================================
+   12) TEXTOS INTERNOS DEL CARD
+========================================================= */
+.kpi-label {
+  font-size: 10px;
+  line-height: 11px;
+  opacity: 0.55;
+  text-align: center;
+  font-weight: normal;
+}
+
+.kpi-main {
+  font-size: 17px;
+  line-height: 18px;
+  font-weight: bold;
+  color: #ffffffd9;
+  text-align: center;
+}
+
+.kpi-sub {
+  font-size: 12px;
+  line-height: 10px;
+  opacity: 0.55;
+  text-align: center;
+  font-weight: normal;
+}
+
+/* =========================================================
+   13) ÍCONOS INTERNOS DEL CARD
+========================================================= */
+.kpi-icono-interno-grande {
+  width: 17px;
+  height: 17px;
+  opacity: 0.75;
+}
+
+.kpi-icono-interno-chico {
+  width: 12px;
+  height: 13px;
+  opacity: 0.75;
+}
+
+
+/* =========================================================
+   14) CARD COMPUESTO LEGADO
+   Sigue disponible para Telemetría: Combustible / Temperatura.
+========================================================= */
+.kpi-metrics-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+  width: 100%;
+}
+
+.kpi-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 2px;
+}
+
+/* =========================================================
+   15) TELEMETRÍA
+========================================================= */
+.kpi-block-telemetry .kpi-cards {
+  display: grid;
+  grid-template-columns: 90px 90px;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 8px;
+  justify-content: center;
+  align-items: start;
+}
+
+.kpi-block-telemetry .kpi-cards > :nth-child(2),
+.kpi-block-telemetry .kpi-cards > :nth-child(4) {
+  margin-top: 10px;
+}
+
+.kpi-block-telemetry .kpi-cards > :nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+.kpi-block-telemetry .kpi-cards > :nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.kpi-block-telemetry .kpi-cards > :nth-child(3) {
+  grid-column: 2;
+  grid-row: 1;
+}
+.kpi-block-telemetry .kpi-cards > :nth-child(4) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.kpi-card-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 90px;
+}
+
+.kpi-card-title {
+  font-size: 10px;
+  line-height: 11px;
+  opacity: 0.65;
+  text-align: center;
+}
+
+.kpi-card-telemetry-main {
+  width: 90px;
+  height: 58px;
+  box-sizing: border-box;
+}
+
+.kpi-card-telemetry-mini {
+  width: 90px;
+  height: 58px;
+  gap: 3px;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.kpi-telemetry-row {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.kpi-telemetry-row .kpi-main {
+  font-size: 13px;
+  line-height: 14px;
+  text-align: left;
+}

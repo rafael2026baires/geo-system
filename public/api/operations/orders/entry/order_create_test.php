@@ -26,9 +26,11 @@ try {
     $companyId  = (int)$companyId;
     $customerId = (int)$customerId;    
     
-   if ($companyId === 0 || $customerId === 0 || !$address) {
+    if ($companyId === 0 || $customerId === 0 || !$address) {
         json_error('Datos incompletos');
     }
+  
+    $now = date('Y-m-d H:i:s');
     
     $lat = $lat !== null ? (float)$lat : null;
     $lng = $lng !== null ? (float)$lng : null;
@@ -78,8 +80,8 @@ try {
             state,
             country,
             status,
-            created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10, NOW())
+            created_at        
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10, ?) 
     ");
 
     $stmt->execute([
@@ -93,10 +95,13 @@ try {
         $place_id,
         $city,
         $state,
-        $country
+        $country,
+        $now
     ]);
 
     $orderId = $pdo->lastInsertId();
+
+    $place_id = $place_id ?: null;
 
     // guardar dirección si no existe
     $stmt = $pdo->prepare("
@@ -113,8 +118,8 @@ try {
             country,
             created_at
         )
-        SELECT 
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+        SELECT             
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE NOT EXISTS (
             SELECT 1
             FROM customer_addresses
@@ -135,7 +140,8 @@ try {
         $place_id,
         $city,
         $state,
-        $country,  
+        $country, 
+        $now,
          
         $tenantId,
         $customerId,
@@ -145,6 +151,7 @@ try {
 
     $pdo->commit();
     CacheInvalidationService::gridContext($tenantId);
+    CacheInvalidationService::dashboardCharts($tenantId);
 
     json_ok([
         'order_id' => $orderId,

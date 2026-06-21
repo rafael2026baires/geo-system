@@ -30,8 +30,10 @@ try {
         json_error('Datos incompletos');
     }
     if ($vehicleId === 0 && $driverId === 0) {
-        json_error('Debe asignar vehiculo, chofer o ambos');}
-    
+        json_error('Debe asignar vehiculo, chofer o ambos');
+    }    
+
+    $now = date('Y-m-d H:i:s');
 
     $pdo->beginTransaction();
 
@@ -83,12 +85,12 @@ try {
     $stmt = $pdo->prepare("
         UPDATE order_assignments
         SET status = 50,
-            closed_at = NOW()
+            closed_at = ?
         WHERE order_id = ?
         AND tenant_id = ?
         AND status = 1
-    ");
-    $stmt->execute([$orderId, $tenantId]);
+    ");    
+    $stmt->execute([$now, $orderId, $tenantId]);
 
     // sugerencias
     if ($vehicleId !== 0 && ($driverId === 0 || $deviceId === 0)) {    
@@ -116,15 +118,16 @@ try {
             vehicle_id,
             driver_id,
             device_id,
-            assigned_at
-        ) VALUES (?, ?, ?, ?, ?, NOW())
+            assigned_at        
+        ) VALUES (?, ?, ?, ?, ?, ?) 
     ");
     $stmt->execute([
         $tenantId,
         $orderId,
         $vehicleId,
         $driverId,
-        $deviceId
+        $deviceId,
+        $now
     ]);
 
     // actualizar order
@@ -140,6 +143,7 @@ try {
 
     $pdo->commit();    
     CacheInvalidationService::gridContext($tenantId);
+    CacheInvalidationService::dashboardCharts($tenantId);
 
     json_ok([
         'vehicle_id' => $vehicleId,

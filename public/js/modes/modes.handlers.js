@@ -1,3 +1,5 @@
+import { getVehicleMarkerPosition } from '../map/markers/vehicle.marker.js';
+
 const FOCUS_ZOOM = 17; // valor del zoon cuando se hace foco
 
 export function createModeHandlers({
@@ -30,7 +32,7 @@ export function createModeHandlers({
       function loop() {
         const marker = getMarker();
         if (marker) {
-          const ll = marker.getLatLng();
+          const ll = getVehicleMarkerPosition(marker);
     
           // 🔹 ajustar zoom SOLO al entrar en foco
           if (!didSetZoom) {

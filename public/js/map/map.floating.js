@@ -1,6 +1,6 @@
 import { stopFollow } from './map.camera.control.js';
 import { initMap } from './map.init.js';
-import { createVehicleMarker, updateVehicleMarkerSize } from '../common/helpers.js';
+import { createVehicleMarker, updateVehicleMarkerVisualByZoom, getVehicleMarkerPosition, removeVehicleMarkerFromMap} from './markers/vehicle.marker.js';
 import { updateOrientation } from '../realtime/orientation.engine.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
 import {
@@ -17,9 +17,7 @@ import {
   setMapZoom,
   setMapMinZoom,
   panMapTo,
-  removeMapLayer,
-  getMapZoom,
-  getMarkerPosition
+  getMapZoom
 } from './map.adapter.js';
 
 let floatingMap = null;
@@ -147,7 +145,7 @@ function shouldAnimateFloatingByZoom() {
 
 function clearFloatingTrackingState() {
   if (floatingMarker && floatingMap) {
-    removeMapLayer(floatingMap, floatingMarker);
+    removeVehicleMarkerFromMap(floatingMap, floatingMarker);
   }
 
   floatingMarker = null;
@@ -261,15 +259,15 @@ function ensureFloatingClientsLayers() {
   const map = floatingMap;
   if (!map || floatingClientsLayersReady) return;
 
-  if (!map.loaded()) {
-    map.once('load', () => {
+  if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) {
+    setTimeout(() => {
       ensureFloatingClientsLayers();
 
       if (pendingFloatingClientsFeatureCollection) {
         updateFloatingClientsSource(pendingFloatingClientsFeatureCollection);
         pendingFloatingClientsFeatureCollection = null;
       }
-    });
+    }, 100);
 
     return;
   }
@@ -406,7 +404,7 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
         zoom: getMapZoom(floatingMap)
       });
 
-      updateVehicleMarkerSize(floatingMarker, getMapZoom(floatingMap));
+      updateVehicleMarkerVisualByZoom(floatingMarker, getMapZoom(floatingMap));
     });  
 }
 
@@ -457,7 +455,7 @@ export function updateFloating(markersRef, dt = 0) {
   if (!marker) return;
 
   //const p = marker.getLatLng();
-  const p = marker.__lastPoint || getMarkerPosition(marker);
+  const p = marker.__lastPoint || getVehicleMarkerPosition(marker);
   if (!p) return;
 
   // crear marker si no existe
@@ -501,7 +499,7 @@ export function updateFloating(markersRef, dt = 0) {
     floatingMotion.tick(dt);
   }
 
-  panMapTo(floatingMap, getMarkerPosition(floatingMarker));
+  panMapTo(floatingMap, getVehicleMarkerPosition(floatingMarker));
 }
 
 export function enableFloatingDrag() {
@@ -570,6 +568,6 @@ export function refreshFloatingMapView() {
   invalidateMapSize(floatingMap);
 
   if (floatingMarker) {
-    panMapTo(floatingMap, getMarkerPosition(floatingMarker));
+    panMapTo(floatingMap, getVehicleMarkerPosition(floatingMarker));
   }
 }

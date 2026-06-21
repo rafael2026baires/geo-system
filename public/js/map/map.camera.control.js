@@ -1,10 +1,6 @@
 import { highlightUnitMarkerById } from './map.marker.highlight.js';
-import {
-  getMarkerPosition,
-  flyToPosition,
-  setMapCenter,
-  getMapZoom
-} from './map.adapter.js';
+import { flyToPosition, setMapCenter, getMapZoom} from './map.adapter.js';
+import { getVehicleMarkerPosition} from './markers/vehicle.marker.js';
 
 let followedUnitId = null; 
 let mapRef = null;
@@ -29,7 +25,7 @@ export function focusUnit(unitId) {
   const marker = markersRef.get(unitId);
   if (!marker) return;
 
-  const latlng = getMarkerPosition(marker);
+  const latlng = getVehicleMarkerPosition(marker);
   flyToPosition(mapRef, latlng, 16);
 }
 
@@ -58,7 +54,7 @@ export function updateFollow() {
     return;
   }
 
-  const p = getMarkerPosition(marker);
+  const p = getVehicleMarkerPosition(marker);
   if (!p) return;
 
   if (p.lat === lastLat && p.lng === lastLng) return;

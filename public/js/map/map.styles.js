@@ -49,4 +49,18 @@ export const MAP_STYLE_OPENFREEMAP_LIBERTY = {
 
 // Estilo activo actual
 //export const ACTIVE_MAP_STYLE = MAP_STYLE_CARTO_DARK;
-export const ACTIVE_MAP_STYLE = MAP_STYLE_OPENFREEMAP_LIBERTY;
+export const MAP_STYLES = [
+  MAP_STYLE_CARTO_DARK,
+  MAP_STYLE_OPENFREEMAP_LIBERTY
+];
+
+export function getActiveMapStyle() {
+  const savedStyleId = localStorage.getItem('geo_map_style_id');
+
+  return (
+    MAP_STYLES.find(style => style.id === savedStyleId) ||
+    MAP_STYLE_OPENFREEMAP_LIBERTY
+  );
+}
+
+export const ACTIVE_MAP_STYLE = getActiveMapStyle();

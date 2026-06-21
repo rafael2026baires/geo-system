@@ -23,6 +23,8 @@ try {
         json_error('Datos incompletos');
     }
 
+    $now = date('Y-m-d H:i:s');
+
     $pdo->beginTransaction();
 
     // asignación activa
@@ -158,16 +160,16 @@ try {
             status,
             active,
             started_at
-        )
-        VALUES (?, ?, ?, ?, CURRENT_DATE, NULL, NULL, 300, 30, 1, NOW())
+        )        
+        VALUES (?, ?, ?, ?, CURRENT_DATE, NULL, NULL, 300, 30, 1, ?)
         ON DUPLICATE KEY UPDATE
             id = LAST_INSERT_ID(id),
             driver_id = COALESCE(driver_id, VALUES(driver_id)),
             device_id = COALESCE(device_id, VALUES(device_id))
     ");
 
-    try {
-        $stmt->execute([$tenantId, $vehicleId, $driverIdFinal, $deviceIdFinal]);
+    try {        
+        $stmt->execute([$tenantId, $vehicleId, $driverIdFinal, $deviceIdFinal, $now]);
     } catch (PDOException $e) {
         if (isset($e->errorInfo[1]) && (int)$e->errorInfo[1] === 1062) {
             json_error('Recurso ocupado');
@@ -179,17 +181,17 @@ try {
 
     // update order
     $stmt = $pdo->prepare("
-        UPDATE orders
-        SET status = 30,
-            loaded_at = NOW(),
-            trip_id = ?,
-            vehicle_id = ?
-        WHERE id = ?
-        AND tenant_id = ?
-        AND status = 20
+            UPDATE orders
+            SET status = 30,
+                loaded_at = ?,
+                trip_id = ?,
+                vehicle_id = ?
+            WHERE id = ?
+            AND tenant_id = ?
+            AND status = 20
     ");
-
-    $stmt->execute([$tripId, $vehicleId, $orderId, $tenantId]);
+    
+    $stmt->execute([$now, $tripId, $vehicleId, $orderId, $tenantId]);
 
     if ($stmt->rowCount() === 0) {
         json_error('Pedido ya no esta ASSIGNED');
@@ -200,18 +202,19 @@ try {
 
         $stmt = $pdo->prepare("
             INSERT INTO resource_combinations (tenant_id, vehicle_id, driver_id, device_id, last_used_at)
-            VALUES (?, ?, ?, ?, NOW())
+            VALUES (?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 driver_id = VALUES(driver_id),
                 device_id = VALUES(device_id),
-                last_used_at = NOW()
+                last_used_at = VALUES(last_used_at)
         ");
 
         $stmt->execute([
             $tenantId,
             $vehicleId,
             $driverIdFinal ?: null,
-            $deviceIdFinal ?: null
+            $deviceIdFinal ?: null,
+            $now
         ]);
     }
 
@@ -235,6 +238,7 @@ try {
 
     $pdo->commit();    
     CacheInvalidationService::gridContext($tenantId);
+    CacheInvalidationService::dashboardCharts($tenantId);     
 
     json_ok([]);
 

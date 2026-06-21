@@ -1,5 +1,5 @@
 import { distanceMeters } from '../common/helpers.js';
-import { setMarkerPosition } from '../map/map.adapter.js';
+import { setVehicleMarkerPosition } from '../map/markers/vehicle.marker.js';
 
 export class UnitMotion {
   constructor(marker) {
@@ -17,7 +17,7 @@ export class UnitMotion {
   // Arranque limpio con el primer punto real
   setInitialPoint(point) {
     this.virtualPos = { lat: point.lat, lng: point.lng };
-    setMarkerPosition(this.marker, point);
+    setVehicleMarkerPosition(this.marker, point);
   }
 
   snapTo(point) {
@@ -25,7 +25,7 @@ export class UnitMotion {
     this.heading = null;
     this.speed = 0;
     this.targetPos = null;
-    setMarkerPosition(this.marker, point);
+    setVehicleMarkerPosition(this.marker, point);
   }
 
 
@@ -48,7 +48,7 @@ export class UnitMotion {
         this.virtualPos = { lat: point.lat, lng: point.lng };
         this.heading = null;
         this.speed = 0;
-        setMarkerPosition(this.marker, point);
+        setVehicleMarkerPosition(this.marker, point);
 
         return;
       }    
@@ -62,7 +62,7 @@ export class UnitMotion {
       if (dist === 0) {
         this.heading = null;
         this.speed = 0;
-        setMarkerPosition(this.marker, point);
+        setVehicleMarkerPosition(this.marker, point);
         return;
       }
 
@@ -79,37 +79,37 @@ export class UnitMotion {
 
   
   // Avance sin RAF (para multi con RAF global)
-tick(dt) {
-  if (!this.virtualPos) return;
-  if (!this.heading || !this.targetPos) return;
+  tick(dt) {
+    if (!this.virtualPos) return;
+    if (!this.heading || !this.targetPos) return;
 
-  const nextLat = this.virtualPos.lat + this.heading.dLat * this.speed * dt;
-  const nextLng = this.virtualPos.lng + this.heading.dLng * this.speed * dt;
+    const nextLat = this.virtualPos.lat + this.heading.dLat * this.speed * dt;
+    const nextLng = this.virtualPos.lng + this.heading.dLng * this.speed * dt;
 
-  const remainingBefore = Math.hypot(
-    this.targetPos.lat - this.virtualPos.lat,
-    this.targetPos.lng - this.virtualPos.lng
-  );
+    const remainingBefore = Math.hypot(
+      this.targetPos.lat - this.virtualPos.lat,
+      this.targetPos.lng - this.virtualPos.lng
+    );
 
-  const remainingAfter = Math.hypot(
-    this.targetPos.lat - nextLat,
-    this.targetPos.lng - nextLng
-  );
+    const remainingAfter = Math.hypot(
+      this.targetPos.lat - nextLat,
+      this.targetPos.lng - nextLng
+    );
 
-  if (remainingAfter >= remainingBefore) {
-    this.virtualPos = { lat: this.targetPos.lat, lng: this.targetPos.lng };
-    this.heading = null;
-    this.speed = 0;
-    this.targetPos = null;
+    if (remainingAfter >= remainingBefore) {
+      this.virtualPos = { lat: this.targetPos.lat, lng: this.targetPos.lng };
+      this.heading = null;
+      this.speed = 0;
+      this.targetPos = null;
 
-    setMarkerPosition(this.marker, this.virtualPos);
+      setVehicleMarkerPosition(this.marker, this.virtualPos);
 
-    return;
+      return;
+    }
+
+    this.virtualPos.lat = nextLat;
+    this.virtualPos.lng = nextLng;
+
+    setVehicleMarkerPosition(this.marker, this.virtualPos);
   }
-
-  this.virtualPos.lat = nextLat;
-  this.virtualPos.lng = nextLng;
-
-  setMarkerPosition(this.marker, this.virtualPos);
-}
 }

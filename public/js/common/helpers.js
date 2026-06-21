@@ -1,10 +1,3 @@
-import {
-  setMarkerIcon,
-  getMarkerElement,
-  createDivIcon,
-  createMapMarker
-} from '../map/map.adapter.js';
-
 let realtimeAnimRunning = false;
 let realtimeRafId = null;
 
@@ -54,72 +47,6 @@ export async function pollLastPoint(tenantId, unitId, lastTs) {
   const url = `last_point.php?tenantId=${tenantId}&unitId=${unitId}&lastTs=${encodeURIComponent(lastTs)}`;
   const res = await fetch(url);
   return await res.json(); // puede ser null
-}
-
-function getVehicleMarkerVisualByZoom(zoom) {
-  //if (zoom < 9) return { type: 'dot', size: 8 };
-  if (zoom < 13) return { type: 'dot', size: 5 };
-  if (zoom < 15) return { type: 'truck', size: 12 };
-  if (zoom < 16) return { type: 'truck', size: 14 };
-  if (zoom < 18) return { type: 'truck', size: 20 };
-  return { type: 'truck', size: 25 };
-}
-
-function createVehicleIcon(type, size) {
-  if (type === 'dot') {
-    return createDivIcon({
-      className: 'veh-dot-icon',
-      html: `<div class="veh-dot"></div>`,
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2]
-    });
-  }
-
-  return createDivIcon({
-    className: 'veh-icon',
-    html: `
-      <div class="veh-wrapper">
-        <img class="veh-img" src="/assets/images/truck1.png">
-      </div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
-  });
-}
-
-export function createVehicleMarker(layer, p, zoom = 13) {
-  const visual = getVehicleMarkerVisualByZoom(zoom);
-  const icon = createVehicleIcon(visual.type, visual.size);
-
-  const marker = createMapMarker(layer, p, {
-     icon,
-     interactive: true
-  });
-  
-  marker.__vehicleMarkerVisual = visual;
-
-  return marker;
-}
-
-export function updateVehicleMarkerSize(marker, zoom) {
-  if (!marker) return;
-
-  const visual = getVehicleMarkerVisualByZoom(zoom);
-  const prev = marker.__vehicleMarkerVisual;
-
-  if (
-    prev &&
-    prev.type === visual.type &&
-    prev.size === visual.size
-  ) return;
-
-  setMarkerIcon(marker, createVehicleIcon(visual.type, visual.size));
-  marker.__vehicleMarkerVisual = visual;
-
-  if (marker.__isHighlighted) {
-    const el = getMarkerElement(marker);
-    if (el) el.classList.add('veh-marker-highlight');
-  }  
 }
 
 export function clearReplay(map) {

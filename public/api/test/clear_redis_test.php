@@ -25,6 +25,8 @@ try {
     // contexto pesado del tablero
     $deleted['grid_context'] = $redis->del("grid_context:$tenantId");
 
+    // cache gráficos dashboard
+    $deleted['dashboard_operational_charts_live'] = $redis->del("dashboard_operational_charts_live:$tenantId");
     // realtime GPS
     $deleted['unit'] = deleteByPattern($redis, "unit:$tenantId:*");
 

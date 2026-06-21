@@ -23,4 +23,15 @@ class CacheInvalidationService
         $redis = RedisService::get();
         return $redis->del("grid_context:$tenantId");
     }
+
+    public static function dashboardCharts($tenantId)
+    {
+        if (!$tenantId) {
+            return false;
+        }
+
+        $redis = RedisService::get();        
+        return $redis->del("dashboard_operational_charts_live:$tenantId");
+    }
+
 }

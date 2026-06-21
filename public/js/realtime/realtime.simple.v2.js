@@ -1,4 +1,4 @@
-import { updateVehicleMarkerSize } from '../common/helpers.js';
+import { updateVehicleMarkerVisualByZoom } from '../map/markers/vehicle.marker.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
 import { renderSummaryFromBackend } from '../grid/grid.render.js';
 import { initCameraControl, updateFollow, hasFollow  } from '../map/map.camera.control.js';
@@ -19,7 +19,7 @@ export function runRealtimeV2({ map, layer, url }) {
 
     onMapZoomEnd(map, () => {
       markers.forEach(marker => {
-        updateVehicleMarkerSize(marker, getMapZoom(map));
+        updateVehicleMarkerVisualByZoom(marker, getMapZoom(map));
       });
     });
 

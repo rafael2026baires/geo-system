@@ -3,11 +3,13 @@
    ========================================================= */
 
 .grid-summary {
-  margin-top: 10px;
+  margin-top: 1%;
   margin-left: 0.5%;
   width: 100%;
 
-  border: 1px solid #3D3D3D;
+  /* border: 1px solid var(--grid-summary-border);*/
+  border: none;
+  box-shadow: 0 2px 10px #00000026;
   border-radius: 6px;
   padding: 8px;
 
@@ -19,7 +21,7 @@
 #grid-new {
   font-size: 12px;
 
-  max-height: 58Vh;
+  max-height: 36vh;
   overflow-y: auto;  
 
   max-width: 100%;
@@ -36,94 +38,66 @@
   width: 6px;   /* scroll vertical */
   height: 4px;  /* scroll horizontal */
 }
-#grid-new::-webkit-scrollbar-track {
-  background: #2B201D;
+#grid-new::-webkit-scrollbar-corner {  
+  background: var(--grid-scroll-track-bg);
 }
-#grid-new::-webkit-scrollbar-thumb {
-  background: #5C5C5C;
+#grid-new::-webkit-scrollbar-track {  
+  background: var(--grid-scroll-track-bg);  
+}
+#grid-new::-webkit-scrollbar-thumb {  
+  background: var(--grid-scroll-thumb-bg);
   border-radius: 8px;
 }
-#grid-new::-webkit-scrollbar-thumb:hover {
-  background: #717171;
-}
-#grid-new::-webkit-scrollbar-corner {
-  background: #2B201D;
-}
-#grid-new::-webkit-scrollbar-track {
-  background: #2B201D;
-}
-#grid-new::-webkit-scrollbar-thumb {
-  background: #5C5C5C;
-  border-radius: 8px;
-}
-#grid-new::-webkit-scrollbar-thumb:hover {
-  background: #717171;
+#grid-new::-webkit-scrollbar-thumb:hover {  
+  background: var(--grid-scroll-thumb-hover-bg);
 }
 
 .grid-container-geo {
 
   width: max-content;
   display: grid;
-  grid-template-rows: 46px;   /* altura SOLO del encabezado */
-  grid-auto-rows: 25px;       /* altura de las filas normales */
+  grid-template-rows: 44px;   /* altura SOLO del encabezado */
+  grid-auto-rows: 22px;       /* altura de las filas normales */
   gap: 0;
 
   grid-template-columns:
-    90px   /* vehículo */  
-    17px   /* ********sep******** */
-    40px   /* señal */
-    44px   /* movimiento */
-    11px   /* ********sep******** */
-    24px   /* en base */
-    24px   /* en calle */
-    24px   /* el cliente */
-    11px   /* ********sep******** */
-    120px  /* pedidos */
-    200px  /* ruta */
-    11px   /* ********sep******** */
-    40px   /* motor */
-    110px  /* combustible */
-    110px; /* temperatura */
+    140px   /* vehículo */  
+    21px   /* ********sep******** */
+    41px   /* señal */
+    46px   /* movimiento */
+    12px   /* ********sep******** */
+    30px   /* en base */
+    30px   /* en calle */
+    30px   /* el cliente */
+    12px   /* ********sep******** */
+    240px  /* pedidos */
+    380px  /* ruta */
 }
 
-.grid-container-geo.grid-no-obd {
-  grid-template-columns:
-    90px   /* vehículo */  
-    17px   /* sep */
-    40px   /* señal */
-    44px   /* movimiento */
-    11px   /* sep */
-    24px   /* en base */
-    24px   /* en calle */
-    24px   /* cliente */
-    11px   /* sep */
-    120px  /* pedidos */
-    200px; /* ruta */
-}
 /* =========================================================
    2. CELDA BASE
    ========================================================= */
 
 .item {
-  border: 0px solid #2B201D;
+  border: 2px solid var(--layout-sidebar-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  background: #2B201D;
-  box-shadow: inset 0 -1px 0 #2B201D;
+  font-size: 11px;  
+  background: var(--layout-sidebar-bg);  
+  box-shadow: inset 0 -1px 0 var(--grid-cell-shadow-color);
 }
 /* =========================================================
    2.1 VEHÍCULO / ESTADO ACTIVO
    ========================================================= */
-.vehicle-name {
-  color: #5C5C5C;
+.vehicle-name {  
+  color: var(--grid-vehicle-name-color);
 }
-.vehicle-active {
-  color: #CFCFCF;
+.vehicle-active {  
+  color: var(--grid-vehicle-active-color);
 }
-.vehicle-inactive {
-  color: #5C5C5C;
+.vehicle-inactive {  
+  color: var(--grid-vehicle-inactive-color);
 }
 
 /* =========================================================
@@ -172,18 +146,6 @@
   height: 27px;
 }
 
-.header-icon-engine {
-  width: 22px;
-  height: 22px;
-}
-.header-icon-fuel {
-  width: 22px;
-  height: 22px;
-}
-.header-icon-temp {
-  width: 30px;
-  height: 28px;
-}
 
 .grid-container-geo .item.grid-header:nth-child(1),
 
@@ -195,135 +157,67 @@
 .grid-container-geo .item.grid-header:nth-child(8),
 
 .grid-container-geo .item.grid-header:nth-child(10),
-.grid-container-geo .item.grid-header:nth-child(11),
-
-.grid-container-geo .item.grid-header:nth-child(13),
-.grid-container-geo .item.grid-header:nth-child(14),
-.grid-container-geo .item.grid-header:nth-child(15) {
-  background: #382924 !important;  /* 474747 */
+.grid-container-geo .item.grid-header:nth-child(11) {  
+  background: var(--grid-header-bg) !important;
 }
 
 /* =========================================================
    3.1 COLUMNA VEHÍCULO FIJA
    ========================================================= */
-.grid-container-geo .item:nth-child(15n + 1) {
+.grid-container-geo .item:nth-child(11n + 1) {
   position: sticky;
   left: 0;
-  z-index: 600;
-  background: #302925;
+  z-index: 600;  
+  background: var(--grid-fixed-col-bg);
 }
 .grid-container-geo .item.grid-header:nth-child(1) {
-  z-index: 900;
-  background: #382924 !important;
+  z-index: 900;  
+  background: var(--grid-header-bg) !important;
 }
-.grid-container-geo .item:nth-child(15n + 2) {
+.grid-container-geo .item:nth-child(11n + 2) {
   position: sticky;
   left: 90px;
-  z-index: 600;
-  background: #2B201D;
+  z-index: 600;  
+   background: var(--layout-sidebar-bg-bg);
 }
 .grid-container-geo .item.grid-header:nth-child(2) {
-  z-index: 900;
-  background: #2B201D !important;
+  z-index: 900;  
+  background: var(--layout-sidebar-bg-bg) !important;
 }
-/* ========================================================= */
-/* columna fija en modo sin OBD */
-.grid-container-geo.grid-no-obd .item:not(.grid-header) {
-  position: static;
-  left: auto;
-  z-index: auto;
-}
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 1) {
-  position: sticky;
-  left: 0;
-  z-index: 600;
-  background: #302925;
-}
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 2) {
-  position: sticky;
-  left: 90px;
-  z-index: 600;
-  background: #2B201D;
-}
-.grid-container-geo.grid-no-obd .item.grid-header:nth-child(1) {
-  z-index: 900;
-  background: #382924 !important;
-}
-.grid-container-geo.grid-no-obd .item.grid-header:nth-child(2) {
-  z-index: 900;
-  background: #2B201D !important;
-}
+
 /* ========================================================= 
    4. COLOR POR COLUMNAS / SELECCIÓN 
    ========================================================= */
 /* columnas con fondo visible */
 
-.grid-container-geo .item:nth-child(15n + 1),
+.grid-container-geo .item:nth-child(11n + 1),
 
-.grid-container-geo .item:nth-child(15n + 3),
-.grid-container-geo .item:nth-child(15n + 4),
+.grid-container-geo .item:nth-child(11n + 3),
+.grid-container-geo .item:nth-child(11n + 4),
 
-.grid-container-geo .item:nth-child(15n + 6),
-.grid-container-geo .item:nth-child(15n + 7),
-.grid-container-geo .item:nth-child(15n + 8),
+.grid-container-geo .item:nth-child(11n + 6),
+.grid-container-geo .item:nth-child(11n + 7),
+.grid-container-geo .item:nth-child(11n + 8),
 
-.grid-container-geo .item:nth-child(15n + 10),
-.grid-container-geo .item:nth-child(15n + 11),
-
-.grid-container-geo .item:nth-child(15n + 13),
-.grid-container-geo .item:nth-child(15n + 14),
-.grid-container-geo .item:nth-child(15n + 15) {
-  background: #302925;
+.grid-container-geo .item:nth-child(11n + 10),
+.grid-container-geo .item:nth-child(11n + 11) {  
+  background: var(--grid-fixed-col-bg);
 }
 
 /* ********* separación interna entre columnas principales **** */
-.grid-container-geo .item:nth-child(15n + 4),
+.grid-container-geo .item:nth-child(11n + 4),
 
-.grid-container-geo .item:nth-child(15n + 7),
-.grid-container-geo .item:nth-child(15n + 8),
+.grid-container-geo .item:nth-child(11n + 7),
+.grid-container-geo .item:nth-child(11n + 8),
 
-.grid-container-geo .item:nth-child(15n + 11),
-
-.grid-container-geo .item:nth-child(15n + 14),
-.grid-container-geo .item:nth-child(15n + 15) {
-  border-left: 1px solid #2B201D;  
+.grid-container-geo .item:nth-child(11n + 11) {  
+  border-left: 1px solid var(--layout-sidebar-bg-bg);
 }
 /* ************************************************************ */
-.grid-container-geo .item.grid-active {
-  background: #342724 !important;
+.grid-container-geo .item.grid-active {  
+  background: var(--grid-active-bg) !important;
 }
 
-/* =========================================================
-   4.1 MODO SIN OBD - 11 COLUMNAS
-   ========================================================= */
-.grid-container-geo.grid-no-obd .item {
-  background: #2B201D;
-}
-
-/* columnas con fondo visible */
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 1),
-
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 3),
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 4),
-
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 6),
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 7),
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 8),
-
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 10),
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 11) {
-  background: #302925;
-}
-
-/* ********* separación interna entre columnas principales **** */
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 4),
-
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 7),
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 8),
-
-.grid-container-geo.grid-no-obd .item:nth-child(11n + 11) {
-  border-left: 1px solid #2B201D;
-}
 /* =========================================================
    5. SEÑAL / CONECTIVIDAD
    ========================================================= */
@@ -335,77 +229,61 @@
 .signal-cell {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .signal-img {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   object-fit: contain;
   display: block;
 }
 
+.signal-img-ok {
+  opacity: 0.7;
+}
+.signal-img-no {
+  opacity: 0.5;
+}
+
 .signal-label {
-  font-size: 9px;
-  color: #CFCFCF;
+  font-size: 9px;  
+  color: var(--grid-signal-label-color);
   line-height: 1;
+}
+
+.signal-label,
+.motion-label {
+  white-space: nowrap;
 }
 
 /* =========================================================
    6. MOVIMIENTO
-   ========================================================= */
-.item-motion {
-  justify-content: center;
-}
-
+ ========================================================= */
 .motion-cell {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
-.motion-wheel {
-  width: 15px;
-  height: 15px;
-  border: 2px solid #717171;
-  border-top-color: transparent;
-  border-radius: 50%;
-  box-sizing: border-box;
+ .move-img { 
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
 }
 
-.motion-wheel.motion-spinning {
-  animation: motion-spin 3s linear infinite;
+.move-ok {
+  opacity: 0.70;
 }
-
-.motion-wheel.motion-disabled {
+.move-stop {
   opacity: 0.35;
-  position: relative;
-}
-
-.motion-wheel.motion-disabled::after {
-  content: '';
-  position: absolute;
-  left: -3px;
-  top: 5px;
-  width: 19px;
-  height: 2px;
-  background: #717171;
-  transform: rotate(-35deg);
-}
-
-.motion-label {
-  font-size: 9px;
-  color: #CFCFCF;
-  line-height: 1;
-}
-
-@keyframes motion-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* =========================================================
@@ -415,11 +293,12 @@
   font-size: 14px;
 }
 
-.truck-img {
-  width: 15px;
-  height: 15px;
+.location-img {
+  width: 14px;
+  height: 14px;
   object-fit: contain;
   display: block;
+  opacity: 0.6;
 }
 
 /* Clases disponibles por estado */
@@ -446,23 +325,23 @@
   height: 7px;
   display: flex;
   overflow: hidden;  
-  border: 1px solid #5A514D;
-  border-radius: 6px;  
-  background: #302925;
+  border: 1px solid var(--grid-orders-bar-border);
+  border-radius: 6px;    
+  background: var(--grid-orders-bar-bg);
 }
 
 .seg {
   height: 100%;
 }
 
-.seg.base {
-  background: #717171;
+.seg.base {  
+  background: var(--grid-orders-seg-base);
 }
-.seg.camion {
-  background: #969696;
+.seg.camion {  
+  background: var(--grid-orders-seg-truck);
 }
-.seg.cliente {
-  background: #195AB0;
+.seg.cliente {  
+  background: var(--grid-orders-seg-client);
 }
 
 .orders-simple {
@@ -496,8 +375,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 0.2px;
-  background: #575151;
+  height: 0.2px;  
+  background: var(--grid-timeline-line-color);
   top: 50%;
   transform: translateY(-50%);
   z-index: 0;
@@ -514,84 +393,16 @@
 
 /* nodo individual */
 .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #717171;
-  border: 0px solid #FA11F2;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;  
+  background: var(--grid-timeline-dot-bg);  
+  border: 0px solid var(--grid-timeline-dot-border);
   flex-shrink: 0;
   position: relative;
   z-index: 100;
 }
 
-.dot-delivered {
-  background: #195AB0;
-}
-
-/* =========================================================
-   10. MOTOR
-   ========================================================= */
-.item-motor {
-  justify-content: center;
-  padding: 0;
-}
-
-.motor-cell {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.motor-img {
-  width: 15px;
-  height: 15px;
-  object-fit: contain;
-  display: block;
-}
-
-/* =========================================================
-   11. OBD / COMBUSTIBLE / TEMPERATURA
-   ========================================================= */
-
-.item-obd {
-  justify-content: center;
-  padding: 0 5px;
-  font-size: 10px;
-}
-
-.obd-single {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 16px 1fr;
-  align-items: center;
-  column-gap: 4px;
-}
-
-.obd-icon {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  display: block;
-}
-
-.obd-bar {
-  width: 95%;
-  height: 7px;  
-  border: 1px solid #5A514D;
-  border-radius: 6px;
-  overflow: hidden;  
-  background: #302925;
-}
-
-.obd-fill {
-  height: 100%;
-  background: #717171;
-}
-
-.obd-value {
-  font-size: 10px;
-  color: #ddd;
-  text-align: right;
-  white-space: nowrap;
+.dot-delivered {  
+  background: var(--grid-timeline-dot-delivered-bg);
 }
