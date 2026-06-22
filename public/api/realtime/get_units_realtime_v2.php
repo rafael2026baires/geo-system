@@ -33,7 +33,7 @@ $baseRadius = $_SESSION['base_radius_m'] ?? 100;
 $now = time();
 
 
-$gridLogFile = 'C:/xampp/htdocs/apps/geo-system/grid_context_test.log';
+$gridLogFile = __DIR__ . '/../../../logs/grid_context_test.log';
 function gridTestLog($msg) {
     global $gridLogFile;
     error_log(date('Y-m-d H:i:s') . ' ' . $msg . PHP_EOL, 3, $gridLogFile);
