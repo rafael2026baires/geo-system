@@ -11,7 +11,7 @@ import {
   setFloatingVehicle3DBearing,
   setFloatingVehicle3DVisible
 } from './3d/floating.vehicle.marker.3d.js';
-import { initFloatingVehicle3DCalibrator } from './3d/floating.vehicle.marker.3d.calibrator.js';
+//import { initFloatingVehicle3DCalibrator } from './3d/floating.vehicle.marker.3d.calibrator.js';
 import { createVehicleMarker, updateVehicleMarkerVisualByZoom, getVehicleMarkerPosition, removeVehicleMarkerFromMap} from './markers/vehicle.marker.js';
 import { updateOrientation } from '../realtime/orientation.engine.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
@@ -482,7 +482,7 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     });
     initFloatingVehicle3D(floatingMap);
     if (ENABLE_FLOATING_VEHICLE_3D_CALIBRATOR) {
-      initFloatingVehicle3DCalibrator(floatingMap);
+      //initFloatingVehicle3DCalibrator(floatingMap);
     }
     initFloatingClientMarkers3D(floatingMap);
     setMapMinZoom(floatingMap, 15);
