@@ -34,6 +34,18 @@ function getThemeColor(cssVarName) {
     .trim();
 }
 
+function hideFlatZeroSeries(series) {
+  if (!Array.isArray(series)) return [];
+
+  const hasRealValue = series.some(value => Number(value) > 0);
+
+  if (!hasRealValue) {
+    return series.map(() => null);
+  }
+
+  return series;
+}
+
 function getXAxisTickLabel(value) {
   const label = this.getLabelForValue(value);
   if (!label) return '';
@@ -75,14 +87,22 @@ function getCommonOptions(bottomPadding = 14) {
     scales: {
       x: {
         offset: true,
+        border: {
+          display: true,
+          color: '#c9c9c9'
+        },         
         grid: {
-          display: false
+          display: false,
+          //color: '#c9c9c9',
+          //lineWidth: 0.5,
+          //drawBorder: false          
         },
         ticks: {
           display: true,
           autoSkip: false,
           padding: 8,
-          color: getThemeColor('--chart-axis-text-color'),
+          //color: getThemeColor('--chart-axis-text-color'),
+          color: "#c9c9c9",
           font: {
             size: 10
           },
@@ -116,15 +136,21 @@ function getCommonOptions(bottomPadding = 14) {
 
       y: {
         beginAtZero: true,
+        border: {
+          display: true,
+          color: '#c9c9c9'
+        },        
         ticks: {
           precision: 0,
-          color: getThemeColor('--chart-axis-text-color'),
+          //color: getThemeColor('--chart-axis-text-color'),
+          color: '#c9c9c9',
           font: {
             size: 10
           }
         },
         grid: {          
-          color: getThemeColor('--chart-grid-line-color'),
+          //color: getThemeColor('--chart-grid-line-color'),          
+          color: '#5e5e5e',
           lineWidth: 0.5,
           drawBorder: false
         }
@@ -148,9 +174,14 @@ export function initStreetRhythmChart() {
           data: emptyChartData.delivered_rhythm,
           tension: 0.25,
           fill: false,
-          borderColor: getThemeColor('--chart-line-color'),
-          pointBackgroundColor: getThemeColor('--chart-line-color'),
-          pointBorderColor: getThemeColor('--chart-line-color'),
+
+          //borderColor: getThemeColor('--chart-line-color'),
+          borderColor: '#20cf35',
+          //pointBackgroundColor: getThemeColor('--chart-line-color'),
+          pointBackgroundColor: '#150ba5',
+          //pointBorderColor: getThemeColor('--chart-line-color'),
+          pointBorderColor: '#fc0022',
+
           borderWidth: 1,
           pointRadius: 0,
           pointHoverRadius: 4,
@@ -178,9 +209,12 @@ export function initStreetAccumChart() {
           data: emptyChartData.delivered_accumulated,
           tension: 0.25,
           fill: false,
-          borderColor: getThemeColor('--chart-line-color'),
+
+          //borderColor: getThemeColor('--chart-line-color'),
+          borderColor: '#20cf35',
           pointBackgroundColor: getThemeColor('--chart-line-color'),
           pointBorderColor: getThemeColor('--chart-line-color'),
+
           borderWidth: 1,
           pointRadius: 0,
           pointHoverRadius: 4,
@@ -208,7 +242,8 @@ export function initBaseRhythmChart() {
           data: [],
           tension: 0.25,
           fill: false,
-          borderColor: getThemeColor('--chart-line-color'),
+          //borderColor: getThemeColor('--chart-line-color'),
+          borderColor: '#54A1F7',
           pointBackgroundColor: getThemeColor('--chart-line-color'),
           pointBorderColor: getThemeColor('--chart-line-color'),
           borderWidth: 1,
@@ -238,7 +273,8 @@ export function initBaseAccumChart() {
           data: [],
           tension: 0.25,
           fill: false,
-          borderColor: getThemeColor('--chart-line-color'),
+          //borderColor: getThemeColor('--chart-line-color'),
+          borderColor: '#54A1F7',
           pointBackgroundColor: getThemeColor('--chart-line-color'),
           pointBorderColor: getThemeColor('--chart-line-color'),
           borderWidth: 1,
@@ -260,14 +296,14 @@ export function updateBaseCharts(data) {
   initBaseAccumChart();
 
   if (baseRhythmChart) {
-    baseRhythmChart.data.labels = data.labels;
-    baseRhythmChart.data.datasets[0].data = data.series.loaded_rhythm || [];    
+    baseRhythmChart.data.labels = data.labels;    
+    baseRhythmChart.data.datasets[0].data = hideFlatZeroSeries(data.series.loaded_rhythm || []);
     baseRhythmChart.update();
   }
 
   if (baseAccumChart) {
     baseAccumChart.data.labels = data.labels;
-    baseAccumChart.data.datasets[0].data = data.series.loaded_accumulated || [];
+    baseAccumChart.data.datasets[0].data = hideFlatZeroSeries(data.series.loaded_accumulated || []);
 
     const loadTotal = data.targets?.load_total;
 
@@ -289,13 +325,13 @@ export function updateDeliveryCharts(data) {
 
   if (streetRhythmChart) {
     streetRhythmChart.data.labels = data.labels;
-    streetRhythmChart.data.datasets[0].data = data.series.delivered_rhythm || [];
+    streetRhythmChart.data.datasets[0].data = hideFlatZeroSeries(data.series.delivered_rhythm || []);
     streetRhythmChart.update();
   }
 
   if (streetAccumChart) {
     streetAccumChart.data.labels = data.labels;
-    streetAccumChart.data.datasets[0].data = data.series.delivered_accumulated || [];
+    streetAccumChart.data.datasets[0].data = hideFlatZeroSeries(data.series.delivered_accumulated || []);
 
     const deliveryTotal = data.targets?.delivery_total;
 

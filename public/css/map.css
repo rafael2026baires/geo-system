@@ -46,4 +46,401 @@
 .map-style-selector select:hover {
   background: rgba(30,41,59,0.95);
 }
+
+/* ********** Visibilidad de etiquetas del mapa principal ********** */
+.map-fit-all-btn {
+  top: 10px;
+  left: 10px;
+}
+
+.map-labels-control {
+  position: absolute;
+  top: 50px;
+  right: auto;
+  left: 10px;
+  z-index: 25;
+  display: flex;
+  width: 122px;
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 8px 8px;
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 7px;
+  background: rgba(10,16,24,0.88);
+  color: #cbd5e1;
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.015em;
+}
+
+.map-labels-control__title {
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(148,163,184,0.16);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.map-labels-control__option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 20px;
+  gap: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.map-labels-control__option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-labels-control__label {
+  overflow: hidden;
+  color: #cbd5e1;
+  text-overflow: ellipsis;
+}
+
+.map-labels-control__toggle {
+  position: relative;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 18px;
+  border: 1px solid rgba(148,163,184,0.32);
+  border-radius: 9px;
+  background: rgba(30,41,59,0.82);
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.map-labels-control__toggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.map-labels-control__toggle::after {
+  content: "OFF";
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  color: #94a3b8;
+  font-size: 7px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  transform: translateY(-50%);
+}
+
+.map-labels-control__option input:checked + .map-labels-control__toggle {
+  border-color: rgba(56,189,248,0.52);
+  background: rgba(14,116,144,0.48);
+}
+
+.map-labels-control__option input:checked + .map-labels-control__toggle::before {
+  background: #e0f2fe;
+  transform: translateX(24px);
+}
+
+.map-labels-control__option input:checked + .map-labels-control__toggle::after {
+  content: "ON";
+  right: auto;
+  left: 5px;
+  color: #bae6fd;
+}
+
+.map-labels-control__option input:focus-visible + .map-labels-control__toggle {
+  outline: 2px solid rgba(56,189,248,0.62);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .map-fit-all-btn {
+    left: 8px;
+  }
+
+  .map-labels-control {
+    right: auto;
+    left: 8px;
+    width: 122px;
+    max-width: calc(100% - 16px);
+  }
+
+  .map-labels-control__option {
+    white-space: normal;
+  }
+}
+/* **************************************************************** */
+
 /* ******************************************************* */
+/* ********** Botón demo 360 mapa principal ********** */
+.map-demo-360-btn {
+  position: absolute;
+  top: 52px;
+  right: 54px;
+  z-index: 25;
+
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  background: rgba(10,16,24,0.92);
+  color: #e5e7eb;
+
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-demo-360-btn:hover {
+  background: rgba(30,41,59,0.95);
+}
+/* *************************************************** */
+
+/* ********** Etiqueta mínima de vehículo ********** */
+.vehicle-info-label-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.vehicle-info-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.vehicle-info-label--hidden {
+  display: none;
+}
+
+.vehicle-info-label__text {
+  padding: 2px 5px;
+  border: 0.75px solid rgba(203, 213, 225, 0.42);
+  border-radius: 3px;
+  background: rgba(15, 23, 42, 0.64);
+  color: rgba(226, 232, 240, 0.78);
+  font: 400 9px/1.2 ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.vehicle-info-label__secondary {
+  display: none;
+  margin-top: 1px;
+  font-weight: 500;
+  opacity: 0.78;
+}
+
+.vehicle-info-label--focused .vehicle-info-label__secondary {
+  display: block;
+  font-weight: 600;
+}
+
+.vehicle-info-label--focused .vehicle-info-label__text {
+  border-width: 1px;
+  border-color: rgba(134, 135, 136, 0.68);  
+  background: rgba(15, 23, 42, 0.64);
+  color: rgba(228, 160, 14, 0.94);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+}
+
+.vehicle-info-label__guide {
+  width: 1px;
+  height: 10px;
+  background: rgba(203, 213, 225, 0.48);
+}
+/* *************************************************** */
+
+/* ********** Etiqueta mínima de location ********** */
+.location-info-label {
+  pointer-events: none;
+  user-select: none;
+}
+
+.location-info-label--hidden {
+  display: none;
+}
+
+.location-info-label__text {
+  position: relative;
+  top: 28px;
+  padding: 2px 5px;
+  border: 0.75px dashed rgba(203, 213, 225, 0.42);
+  border-radius: 5px;
+  /*background: rgba(15, 23, 42, 0.62);*/
+  background: transparent;
+  color: rgba(226, 232, 240, 0.78);
+  font: 400 9px/1.2 ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.location-info-label--focused .location-info-label__text {
+  color: #faf9f8;
+  border-color: #ffaf03;
+}
+
+.location-info-label__secondary {
+  display: none;
+  margin-top: 1px;
+  font-weight: 500;
+  opacity: 0.78;
+}
+
+.location-info-label--focused .location-info-label__secondary {
+  display: block;
+}
+/* *************************************************** */
+
+/* ********** Información contextual del mapa secundario ********** */
+.floating-label.floating-focus-vehicle {
+  display: flex;
+  top: 8px;
+  left: 8px;
+  transform: none;
+  width: min(180px, calc(100% - 88px));
+  max-height: calc(100% - 16px);
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 16px;
+  padding: 6px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(116, 116, 116, 0.5);
+  /*background: rgba(15, 23, 42, 0.88);*/
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font: 500 10px/1.2 Arial, sans-serif;
+  pointer-events: none;
+}
+
+.floating-focus-vehicle--empty {
+  display: none !important;
+}
+
+.floating-label.floating-focus-vehicle.hidden {
+  display: none;
+}
+
+.floating-focus-vehicle__header,
+.floating-focus-vehicle__row,
+.floating-focus-location {
+  display: flex;
+}
+
+.floating-focus-vehicle__header {
+  flex-direction: column;
+}
+
+.floating-focus-vehicle__header {
+  align-items: center;
+}
+
+.floating-focus-vehicle__title {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.floating-focus-vehicle__description,
+.floating-focus-vehicle__unit {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.floating-focus-vehicle__section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: 6px;
+  border-top: 1px solid rgba(203, 213, 225, 0.2);
+}
+
+.floating-focus-vehicle__section-title {
+  grid-column: 1 / -1;
+  margin-bottom: 1px;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+}
+
+.floating-focus-vehicle__row {
+  min-width: 0;
+  gap: 3px;
+}
+
+.floating-focus-vehicle__row-label {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.floating-focus-vehicle__row-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-focus-info--hidden {
+  display: none !important;
+}
+
+#floating-map .floating-focus-location {
+  translate: 60px 20px;
+  min-width: 90px;
+  max-width: 180px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 6px;
+  border: 1px solid rgba(124, 124, 124, 0.45);
+  border-radius: 4px;
+  /*background: rgba(15, 23, 42, 0.84);*/
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: 500 9px/1.2 Arial, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+
+.floating-focus-location__title {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.floating-focus-location__order {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 600;
+}
+
+.floating-focus-location__address,
+.floating-focus-location__city {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+#floating-map .maplibregl-ctrl-top-right {
+  top: 30px;
+}
+/* *************************************************** */

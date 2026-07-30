@@ -61,17 +61,20 @@
   gap: 0;
 
   grid-template-columns:
-    140px   /* vehículo */  
+    170px   /* vehículo */  
     21px   /* ********sep******** */
-    41px   /* señal */
-    46px   /* movimiento */
-    12px   /* ********sep******** */
-    30px   /* en base */
-    30px   /* en calle */
-    30px   /* el cliente */
-    12px   /* ********sep******** */
-    240px  /* pedidos */
-    380px  /* ruta */
+    50px   /* señal */
+    50px   /* movimiento */
+    15px   /* ********sep******** */
+    50px   /* en base */
+    50px   /* en calle */
+    50px   /* el cliente */
+    15px   /* ********sep******** */
+    320px  /* pedidos */
+    60px  /* pedidos asingados */
+    60px  /* pedidos cargados*/
+    60px  /* pedidos entregados*/
+    /* 320px  /* ruta */ 
 }
 
 /* =========================================================
@@ -103,49 +106,11 @@
 /* =========================================================
    3. ENCABEZADOS
    ========================================================= */
-
 .grid-header {
   position: sticky;
   top: 0;
   z-index: 500;
-}   
-
-.grid-header-icon {
-  object-fit: contain;
-  display: block;
-}
-
-.header-icon-signal {
-  width: 20px;
-  height: 20px;
-}
-.header-icon-activity {
-  width: 24px;
-  height: 24px;
-}
-
-.header-icon-base {
-  width: 15px;
-  height: 18px;
-}
-.header-icon-street {
-  width: 15px;
-  height: 18px;
-}
-.header-icon-customer {
-  width: 21px;
-  height: 19px;
-}
-
-.header-icon-boxes {
-  width: 33px;
-  height: 28px;
-}
-.header-icon-route {
-  width: 30px;
-  height: 27px;
-}
-
+}    
 
 .grid-container-geo .item.grid-header:nth-child(1),
 
@@ -157,14 +122,16 @@
 .grid-container-geo .item.grid-header:nth-child(8),
 
 .grid-container-geo .item.grid-header:nth-child(10),
-.grid-container-geo .item.grid-header:nth-child(11) {  
+.grid-container-geo .item.grid-header:nth-child(11),
+.grid-container-geo .item.grid-header:nth-child(12),
+.grid-container-geo .item.grid-header:nth-child(13) {  
   background: var(--grid-header-bg) !important;
 }
 
 /* =========================================================
    3.1 COLUMNA VEHÍCULO FIJA
    ========================================================= */
-.grid-container-geo .item:nth-child(11n + 1) {
+.grid-container-geo .item:nth-child(13n + 1) {
   position: sticky;
   left: 0;
   z-index: 600;  
@@ -174,7 +141,7 @@
   z-index: 900;  
   background: var(--grid-header-bg) !important;
 }
-.grid-container-geo .item:nth-child(11n + 2) {
+.grid-container-geo .item:nth-child(13n + 2) {
   position: sticky;
   left: 90px;
   z-index: 600;  
@@ -190,27 +157,32 @@
    ========================================================= */
 /* columnas con fondo visible */
 
-.grid-container-geo .item:nth-child(11n + 1),
+.grid-container-geo .item:nth-child(13n + 1),
 
-.grid-container-geo .item:nth-child(11n + 3),
-.grid-container-geo .item:nth-child(11n + 4),
+.grid-container-geo .item:nth-child(13n + 3),
+.grid-container-geo .item:nth-child(13n + 4),
 
-.grid-container-geo .item:nth-child(11n + 6),
-.grid-container-geo .item:nth-child(11n + 7),
-.grid-container-geo .item:nth-child(11n + 8),
+.grid-container-geo .item:nth-child(13n + 6),
+.grid-container-geo .item:nth-child(13n + 7),
+.grid-container-geo .item:nth-child(13n + 8),
 
-.grid-container-geo .item:nth-child(11n + 10),
-.grid-container-geo .item:nth-child(11n + 11) {  
+.grid-container-geo .item:nth-child(13n + 10),
+.grid-container-geo .item:nth-child(13n + 11),
+.grid-container-geo .item:nth-child(13n + 12), 
+.grid-container-geo .item:nth-child(13n + 13) {  
   background: var(--grid-fixed-col-bg);
 }
 
 /* ********* separación interna entre columnas principales **** */
-.grid-container-geo .item:nth-child(11n + 4),
+.grid-container-geo .item:nth-child(13n + 4),
 
-.grid-container-geo .item:nth-child(11n + 7),
-.grid-container-geo .item:nth-child(11n + 8),
+.grid-container-geo .item:nth-child(13n + 7),
+.grid-container-geo .item:nth-child(13n + 8),
 
-.grid-container-geo .item:nth-child(11n + 11) {  
+.grid-container-geo .item:nth-child(13n + 11), 
+.grid-container-geo .item:nth-child(13n + 12),
+.grid-container-geo .item:nth-child(13n + 13) 
+{  
   border-left: 1px solid var(--layout-sidebar-bg-bg);
 }
 /* ************************************************************ */
@@ -235,19 +207,6 @@
   white-space: nowrap;
 }
 
-.signal-img {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  display: block;
-}
-
-.signal-img-ok {
-  opacity: 0.7;
-}
-.signal-img-no {
-  opacity: 0.5;
-}
 
 .signal-label {
   font-size: 9px;  
@@ -272,33 +231,11 @@
   white-space: nowrap;
 }
 
- .move-img { 
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  display: block;
-}
-
-.move-ok {
-  opacity: 0.70;
-}
-.move-stop {
-  opacity: 0.35;
-}
-
 /* =========================================================
    7. ESTADO OPERATIVO
    ========================================================= */
 .item-state {
   font-size: 14px;
-}
-
-.location-img {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  display: block;
-  opacity: 0.6;
 }
 
 /* Clases disponibles por estado */
@@ -314,7 +251,6 @@
 /* =========================================================
    8. PEDIDOS
    ========================================================= */
-
 .item-bars {
   justify-content: flex-start;
   padding-left: 12px;
@@ -322,10 +258,10 @@
 
 .bar-seg {
   width: 90%;
-  height: 7px;
+  height: 4px;
   display: flex;
   overflow: hidden;  
-  border: 1px solid var(--grid-orders-bar-border);
+  border: 0px solid var(--grid-orders-bar-border);
   border-radius: 6px;    
   background: var(--grid-orders-bar-bg);
 }
@@ -335,14 +271,34 @@
 }
 
 .seg.base {  
-  background: var(--grid-orders-seg-base);
+  background: #725959;;
 }
 .seg.camion {  
-  background: var(--grid-orders-seg-truck);
+  background: #54A1F7;
 }
 .seg.cliente {  
-  background: var(--grid-orders-seg-client);
+  background: #22c55e;
 }
+
+/* color y fuente de datos de pedidos */
+.item-orders-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #bdbdbd;
+}
+/*
+.item-orders-assigned {
+  color: var(--grid-orders-seg-base);
+
+}
+.item-orders-loaded {
+  color: var(--grid-orders-seg-truck);
+}
+.item-orders-delivered {
+  color: var(--grid-orders-seg-client);
+}
+*/  
+/* ----------------------------------- */
 
 .orders-simple {
   font-size: 11px;
@@ -353,23 +309,25 @@
 /* =========================================================
    9. RUTA / NODOS DE ENTREGA
    ========================================================= */
-
+/*
 .item-timeline {
   display: flex;
   justify-content: flex-start;
   width: 100%;
   padding-left: 12px;
 }
-
+*/
 /* contenedor principal del timeline */
+/*
 .timeline {
   position: relative;
   display: flex;
   align-items: center;
   width: 90%;
 }
-
+*/
 /* línea horizontal de recorrido */
+/*
 .timeline::before {
   content: '';
   position: absolute;
@@ -381,8 +339,9 @@
   transform: translateY(-50%);
   z-index: 0;
 }
-
+*/
 /* contenedor de nodos */
+/*
 .line {
   display: flex;
   align-items: center;
@@ -390,8 +349,9 @@
   width: 100%;
   padding: 0 17px;
 }
-
+*/
 /* nodo individual */
+/*
 .dot {
   width: 7px;
   height: 7px;
@@ -406,3 +366,4 @@
 .dot-delivered {  
   background: var(--grid-timeline-dot-delivered-bg);
 }
+*/  

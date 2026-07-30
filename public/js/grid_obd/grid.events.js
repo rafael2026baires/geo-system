@@ -1,8 +1,9 @@
 import { focusUnit, followUnit, highlightUnitMarker } from '../map/map.camera.control.js';
 import { openFloating, closeFloating } from '../map/map.floating.js';
+import { getFocusedUnitId, setFocusedUnitId } from '../state/unit.state.js';
 
 export function syncGridSelection() {
-  const activeId = window.AppState?.activeUnitId;
+  const activeId = getFocusedUnitId();
 
   document.querySelectorAll('[data-unit]').forEach(el => {
     if (el.dataset.unit === activeId) {
@@ -14,9 +15,7 @@ export function syncGridSelection() {
 }
 
 function setActiveUnit(unitId) {
-  if (window.AppState) {
-    window.AppState.activeUnitId = unitId;
-  }
+  setFocusedUnitId(unitId);
 
   syncGridSelection();
   highlightUnitMarker(unitId);

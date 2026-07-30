@@ -77,3 +77,24 @@
   height: 100%;
   display: block;
 }
+
+.chart-mini-title {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  z-index: 5;
+
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  color: var(--kpi-title-color);
+  opacity: 0.65;
+  letter-spacing: 0.3px;
+
+  pointer-events: none;
+}
+
+.street-rhythm-chart-wrap,
+.street-accum-chart-wrap {
+  position: relative;
+}

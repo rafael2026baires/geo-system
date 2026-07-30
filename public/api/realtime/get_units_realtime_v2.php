@@ -45,6 +45,7 @@ function gridTestLog($msg) {
 $ordersMap = [];
 $activeMap = [];
 $unitIdDbMap = [];
+$vehicleMetaMap = [];
 
 $gridContextKey = "grid_context:" . (int)$tenantId;
 $gridContextTtl = 3600;
@@ -57,10 +58,11 @@ if ($useRedis) {
     if ($gridContextRaw) {
         $gridContext = json_decode($gridContextRaw, true);
 
-        if (is_array($gridContext)) {
+        if (is_array($gridContext) && isset($gridContext['vehicleMetaMap'])) {
             $ordersMap = $gridContext['ordersMap'] ?? [];
             $activeMap = $gridContext['activeMap'] ?? [];
             $unitIdDbMap = $gridContext['unitIdDbMap'] ?? [];
+            $vehicleMetaMap = $gridContext['vehicleMetaMap'];
 
             $gridContextLoadedFromRedis = true;
             
@@ -77,28 +79,86 @@ if (!$gridContextLoadedFromRedis) {
         SELECT 
         o.id,
         v.id as vehicle_id, 
+        v.guy AS vehicle_type,
+        v.brand AS vehicle_brand,
+        v.model AS vehicle_model,
+        v.patent AS vehicle_patent,
         o.status, 
         o.loaded_at AS last_loaded_at, 
         o.delivered_at AS last_delivered_at, 
+        o.address,
+        o.street_address,
+        o.city,
         o.lat, 
         o.lng, 
         v.active, 
         d.device_uuid AS unit_id,
-        company_id,
-        customer_id 
+        o.company_id,
+        o.customer_id,
+        c.name AS customer_name,
+        t.driver_id,
+        dr.name AS driver_name,
+        t.id AS trip_id,
+        t.trip_code,
+        t.started_at AS trip_started_at
         FROM vehicles v 
         LEFT JOIN orders o ON o.vehicle_id = v.id 
             AND o.tenant_id = v.tenant_id 
+        LEFT JOIN customers c ON c.id = o.customer_id
+            AND c.tenant_id = o.tenant_id
         LEFT JOIN vehicle_devices vd ON vd.vehicle_id = v.id 
-        LEFT JOIN devices d ON d.id = vd.device_id 
+        LEFT JOIN devices d ON d.id = vd.device_id
+        LEFT JOIN trips t ON t.tenant_id = v.tenant_id
+            AND t.vehicle_id = v.id
+            AND t.active = 1
+            AND t.status = 30
+        LEFT JOIN drivers dr ON dr.id = t.driver_id
+            AND dr.tenant_id = t.tenant_id
         WHERE v.tenant_id = ?;
     ");
 
     $stmtOrders->execute([(int)$tenantId]);
 
+    $orderStatusLabels = [
+        10 => 'Pendiente',
+        20 => 'Asignado',
+        30 => 'Cargado',
+        40 => 'Entregado'
+    ];
+
     while ($r = $stmtOrders->fetch(PDO::FETCH_ASSOC)) {
         
         $vehicleId = (int)$r['vehicle_id'];
+
+        if (!isset($vehicleMetaMap[$vehicleId])) {
+            $vehicleType = trim((string)($r['vehicle_type'] ?? ''));
+            $vehicleBrand = trim((string)($r['vehicle_brand'] ?? ''));
+            $vehicleModel = trim((string)($r['vehicle_model'] ?? ''));
+            $vehiclePatent = trim((string)($r['vehicle_patent'] ?? ''));
+
+            $vehicleLabelParts = array_values(array_filter([
+                $vehicleType,
+                $vehicleBrand,
+                $vehicleModel
+            ], static fn($value) => $value !== ''));
+
+            $vehicleMetaMap[$vehicleId] = [
+                'vehicle_label' => $vehiclePatent !== ''
+                    ? $vehiclePatent
+                    : ($vehicleLabelParts
+                        ? implode(' ', $vehicleLabelParts)
+                        : (string)$vehicleId),
+                'vehicle_patent' => $vehiclePatent !== '' ? $vehiclePatent : null,
+                'vehicle_type' => $vehicleType !== '' ? $vehicleType : null,
+                'vehicle_brand' => $vehicleBrand !== '' ? $vehicleBrand : null,
+                'vehicle_model' => $vehicleModel !== '' ? $vehicleModel : null,
+                'driver_id' => isset($r['driver_id']) ? (int)$r['driver_id'] : null,
+                'driver_name' => isset($r['driver_name']) ? (string)$r['driver_name'] : null,
+                'trip_id' => isset($r['trip_id']) ? (int)$r['trip_id'] : null,
+                'trip_code' => isset($r['trip_code']) ? (string)$r['trip_code'] : null,
+                'trip_started_at' => isset($r['trip_started_at']) ? (string)$r['trip_started_at'] : null
+            ];
+        }
         
         if (!isset($ordersMap[$vehicleId])) {
             $ordersMap[$vehicleId] = [
@@ -132,11 +192,17 @@ if (!$gridContextLoadedFromRedis) {
         
         if ($r['lat'] && $r['lng']) {
             $ordersMap[$vehicleId]['clients'][] = [
+              'order_id' => (int)$r['id'],
               'lat' => (float)$r['lat'],
               'lng' => (float)$r['lng'],
               'status' => (int)$r['status'],
+              'order_status_label' => $orderStatusLabels[$status] ?? 'Desconocido',
               'company_id' => isset($r['company_id']) ? (int)$r['company_id'] : null,
-              'customer_id' => isset($r['customer_id']) ? (int)$r['customer_id'] : null
+              'customer_id' => isset($r['customer_id']) ? (int)$r['customer_id'] : null,
+              'customer_name' => isset($r['customer_name']) ? (string)$r['customer_name'] : null,
+              'address' => isset($r['address']) ? (string)$r['address'] : null,
+              'street_address' => isset($r['street_address']) ? (string)$r['street_address'] : null,
+              'city' => isset($r['city']) ? (string)$r['city'] : null
             ];
         }    
         
@@ -157,6 +223,7 @@ if (!$gridContextLoadedFromRedis) {
             'ordersMap' => $ordersMap,
             'activeMap' => $activeMap,
             'unitIdDbMap' => $unitIdDbMap,
+            'vehicleMetaMap' => $vehicleMetaMap,
             'totalVehicles' => count($activeMap),
             'cached_at' => time()
         ]));
@@ -341,10 +408,33 @@ if ($filterVehicleId !== null && (int)$vehicleId !== $filterVehicleId) {
     $lastDeliveryAge = $orders['last_delivered_at']
         ? $now - strtotime($orders['last_delivered_at'])
         : null;   
+
+    $vehicleMeta = $vehicleMetaMap[$vehicleId] ?? [
+        'vehicle_label' => (string)$vehicleId,
+        'vehicle_patent' => null,
+        'vehicle_type' => null,
+        'vehicle_brand' => null,
+        'vehicle_model' => null,
+        'driver_id' => null,
+        'driver_name' => null,
+        'trip_id' => null,
+        'trip_code' => null,
+        'trip_started_at' => null
+    ];
     // -----------------------------------------------------------------------------
     $units[] = [
         'unit_id' => $unitId,
         'vehicle_id' => $vehicleId,
+        'vehicle_label' => $vehicleMeta['vehicle_label'],
+        'vehicle_patent' => $vehicleMeta['vehicle_patent'],
+        'vehicle_type' => $vehicleMeta['vehicle_type'],
+        'vehicle_brand' => $vehicleMeta['vehicle_brand'],
+        'vehicle_model' => $vehicleMeta['vehicle_model'],
+        'driver_id' => $vehicleMeta['driver_id'] ?? null,
+        'driver_name' => $vehicleMeta['driver_name'] ?? null,
+        'trip_id' => $vehicleMeta['trip_id'] ?? null,
+        'trip_code' => $vehicleMeta['trip_code'] ?? null,
+        'trip_started_at' => $vehicleMeta['trip_started_at'] ?? null,
         'lat' => $lat,
         'lng' => $lng,
         'server_ts' => $serverTs,

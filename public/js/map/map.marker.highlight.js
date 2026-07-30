@@ -1,24 +1,8 @@
-import { setVehicleMarkerHighlighted } from './markers/vehicle.marker.js';
-
-let highlightedMarker = null;
-
 export function highlightUnitMarkerById({ unitId, markers }) {
-  if (!markers) return;
-
-  if (highlightedMarker) {
-    setVehicleMarkerHighlighted(highlightedMarker, false);
-  }
-
-  const marker = markers.get(unitId);
-  if (!marker) return;
-
-  setVehicleMarkerHighlighted(marker, true);
-  highlightedMarker = marker;
+  void unitId;
+  void markers;
 }
 
 export function clearUnitMarkerHighlight() {
-  if (!highlightedMarker) return;
-
-  setVehicleMarkerHighlighted(highlightedMarker, false);
-  highlightedMarker = null;
+  // El foco del mapa principal se representa mediante su etiqueta.
 }

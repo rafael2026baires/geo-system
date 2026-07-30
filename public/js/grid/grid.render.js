@@ -11,18 +11,18 @@ import {
   renderSignalCell,
   renderMotionCell,
   renderStateSlot,
-  renderOrdersCell,
-  renderTimeline
+  renderOrdersCell
+  // renderTimeline // Ruta de nodos desactivada temporalmente
 } from './grid.cells.js';
 
 import { getLastUnit, setLastUnits } from './grid.store.js';
 import { hasUnitChanged, hasActiveChanged, getChangedUnitsWithoutActiveChange} from './grid.update.js';
 
 const containerId = 'grid-new';
-const GRID_COLS = 11;
+const GRID_COLS = 13;
 
 function getGridCols() {
-  return 11;
+  return 13;
 }
 
 const gridViewMode = {
@@ -48,33 +48,35 @@ function renderGridHeader() {
   return `
     <div class="item grid-header"></div>
 
+
     <div class="item grid-header"></div>
+
 
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/signal.png"       
+        src="/assets/images/icons/signal_w.png"
         class="grid-header-icon header-icon-signal"
         title="Señal"
         alt="Señal"
       >
     </div>
-
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/activity.png"       
+        src="/assets/images/icons/activity_w.png"
         class="grid-header-icon header-icon-activity"
         title="Movimiento"
         alt="Movimiento"
       >
     </div>
 
+
     <div class="item grid-header"></div>
 
 
 
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/base.png"       
+        src="/assets/images/icons/warehouse_w.png"
         class="grid-header-icon header-icon-base"
         title="En Base"
         alt="En Base"
@@ -82,7 +84,7 @@ function renderGridHeader() {
     </div>
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/street.png"       
+        src="/assets/images/icons/street_w.png"
         class="grid-header-icon header-icon-street"
         title="En Calle"
         alt="En Calle"
@@ -90,34 +92,49 @@ function renderGridHeader() {
     </div>
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/customer.png"       
+        src="/assets/images/icons/customer_w.png"
         class="grid-header-icon header-icon-customer"
         title="En Cliente"
         alt="En Cliente"
       >
-    </div>   
-    
-    
+    </div>
+
 
     <div class="item grid-header"></div>
 
+
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/orders_loaded.png"       
+        src="/assets/images/icons/orders_flow_w.png"
         class="grid-header-icon header-icon-boxes"
         title="Pedidos"
         alt="Pedidos"
       >
     </div>
-   
     <div class="item grid-header">
       <img 
-        src="/assets/images/grid/route.png"       
-        class="grid-header-icon header-icon-route"
-        title="Ruta"
-        alt="Ruta"
+        src="/assets/images/icons/orders_assignment_w.png"
+        class="grid-header-icon header-icon-assigment"
+        title="Pedidos Asignados"
+        alt="Pedidos Asignados"
       >
-    </div>      
+    </div>
+    <div class="item grid-header">
+      <img
+        src="/assets/images/icons/orders_loaded_w.png"
+        class="grid-header-icon header-icon-loaded"
+        title="Pedidos Cargados"
+        alt="Pedidos Cargados"
+      >
+    </div>
+    <div class="item grid-header">
+      <img
+        src="/assets/images/icons/orders_delivered_w.png"
+        class="grid-header-icon header-icon-delivered"
+        title="Pedidos Entregados"
+        alt="Pedidos Entregados"
+      >
+    </div>
 
   `;
 }
@@ -178,9 +195,18 @@ function renderActiveRow(u, maxTotal, gridBase) {
       ${renderOrdersCell(unit, maxTotal, gridViewMode)}
     </div>
 
-    <div class="item item-timeline">
-      ${renderTimeline(unit, gridBase)}
+    <div class="item item-orders-value item-orders-assigned">
+      ${unit.orders_assigned || 0}
     </div>
+
+    <div class="item item-orders-value item-orders-loaded">
+      ${unit.orders_loaded || 0}
+    </div>
+
+    <div class="item item-orders-value item-orders-delivered">
+      ${unit.orders_delivered || 0}
+    </div>
+
   `;
 }
 
@@ -213,7 +239,7 @@ function replaceGridRow(container, unitId, rowHtml) {
   return true;
 }
 
-function renderGrid(units, base) {  
+export function renderGrid(units, base) {
     
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -297,4 +323,3 @@ function renderGrid(units, base) {
     bindGridEvents(container);
     // -------------------------------------------------------------------------------------------
 }
-window.renderGrid = renderGrid;

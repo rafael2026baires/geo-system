@@ -2,8 +2,11 @@ import { distanceMeters } from '../common/helpers.js';
 import { setVehicleMarkerPosition } from '../map/markers/vehicle.marker.js';
 
 export class UnitMotion {
-  constructor(marker) {
+  constructor(marker, options = {}) {
     this.marker = marker;
+    this.onPositionChange = typeof options.onPositionChange === 'function'
+      ? options.onPositionChange
+      : null;
     this.virtualPos = null;      // { lat, lng }
     this.heading = null;         // { dLat, dLng } normalizado
     this.speed = 0;              // grados/segundo (aprox, suficiente para visual)
@@ -18,6 +21,7 @@ export class UnitMotion {
   setInitialPoint(point) {
     this.virtualPos = { lat: point.lat, lng: point.lng };
     setVehicleMarkerPosition(this.marker, point);
+    this.onPositionChange?.(point);
   }
 
   snapTo(point) {
@@ -26,6 +30,7 @@ export class UnitMotion {
     this.speed = 0;
     this.targetPos = null;
     setVehicleMarkerPosition(this.marker, point);
+    this.onPositionChange?.(point);
   }
 
 
@@ -49,6 +54,7 @@ export class UnitMotion {
         this.heading = null;
         this.speed = 0;
         setVehicleMarkerPosition(this.marker, point);
+        this.onPositionChange?.(point);
 
         return;
       }    
@@ -63,6 +69,7 @@ export class UnitMotion {
         this.heading = null;
         this.speed = 0;
         setVehicleMarkerPosition(this.marker, point);
+        this.onPositionChange?.(point);
         return;
       }
 
@@ -103,6 +110,7 @@ export class UnitMotion {
       this.targetPos = null;
 
       setVehicleMarkerPosition(this.marker, this.virtualPos);
+      this.onPositionChange?.(this.virtualPos);
 
       return;
     }
@@ -111,5 +119,6 @@ export class UnitMotion {
     this.virtualPos.lng = nextLng;
 
     setVehicleMarkerPosition(this.marker, this.virtualPos);
+    this.onPositionChange?.(this.virtualPos);
   }
 }

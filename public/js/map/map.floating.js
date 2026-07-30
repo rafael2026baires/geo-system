@@ -1,8 +1,35 @@
 import { stopFollow } from './map.camera.control.js';
 import { initMap } from './map.init.js';
+import {
+  initFloatingClientMarkers3D,
+  updateFloatingClientMarkers3D,
+  clearFloatingClientMarkers3D
+} from './3d/floating.client.markers.3d.js';
+import {
+  initFloatingVehicle3D,
+  setFloatingVehicle3DPosition,
+  setFloatingVehicle3DBearing,
+  setFloatingVehicle3DVisible
+} from './3d/floating.vehicle.marker.3d.js';
+import { initFloatingVehicle3DCalibrator } from './3d/floating.vehicle.marker.3d.calibrator.js';
 import { createVehicleMarker, updateVehicleMarkerVisualByZoom, getVehicleMarkerPosition, removeVehicleMarkerFromMap} from './markers/vehicle.marker.js';
 import { updateOrientation } from '../realtime/orientation.engine.js';
 import { UnitMotion } from '../realtime/unit.motion.js';
+import { clearFocusedUnitId } from '../state/unit.state.js';
+import {
+  getVehicleContext,
+  getOrdersByUnitId
+} from '../realtime/realtime.map.context.js';
+import {
+  buildFloatingVehicleDetailModel,
+  buildFloatingOrderDetailModel
+} from './labels/focus.info.formatters.js';
+import {
+  initFloatingFocusInfoLabels,
+  updateFloatingFocusedVehicle,
+  setFloatingRelatedLocationLabels,
+  clearFloatingFocusInfoLabels
+} from './labels/floating.focus.info.labels.js';
 import {
   getFloatingState,
   saveFloatingStatePatch,
@@ -25,16 +52,19 @@ let floatingMap = null;
 let floatingMarker = null;
 let floatingMotion = null;
 let lastFloatingServerPoint = null;
-let activeUnitId = null;
+let displayedUnitId = null;
 
 let lastPoint = null;
 let lastRealtimeData = null;
+let floatingRelatedLocations = [];
 
 const FLOATING_ANIMATION_MIN_ZOOM = 15;
+const ENABLE_FLOATING_VEHICLE_2D = false;
+const ENABLE_FLOATING_VEHICLE_3D_CALIBRATOR = false;
 
 export function setFloatingRealtimeData(data) {
   lastRealtimeData = data;
-  renderFloatingClients();
+  refreshFloatingContext();
 }
 
 function closeFocusPanelArea() {
@@ -96,13 +126,12 @@ function clearFloatingBoxInlineStyles(el) {
   el.style.removeProperty('height');
 }
 
-function showFloatingMap(unitId) {
+function showFloatingMap() {
   const el = document.getElementById('floating-map');
   if (el) el.classList.remove('hidden');
 
   const label = document.getElementById('floating-label');
   if (label) {
-    label.textContent = `Unidad: ${unitId}`;
     label.classList.remove('hidden');
   }
 }
@@ -144,7 +173,9 @@ function shouldAnimateFloatingByZoom() {
 }
 
 function clearFloatingTrackingState() {
-  if (floatingMarker && floatingMap) {
+  setFloatingVehicle3DVisible(floatingMap, false);
+
+  if (ENABLE_FLOATING_VEHICLE_2D && floatingMarker && floatingMap) {
     removeVehicleMarkerFromMap(floatingMap, floatingMarker);
   }
 
@@ -156,8 +187,6 @@ function clearFloatingTrackingState() {
 
 const FLOATING_CLIENTS_SOURCE_ID = 'geo-floating-clients-source';
 const FLOATING_CLIENT_RADIUS_FILL_LAYER_ID = 'geo-floating-clients-radius-fill';
-const FLOATING_CLIENT_RADIUS_LINE_LAYER_ID = 'geo-floating-clients-radius-line';
-const FLOATING_CLIENT_POINTS_LAYER_ID = 'geo-floating-clients-points';
 
 const FLOATING_CLIENT_RADIUS_METERS = 70;
 
@@ -191,36 +220,102 @@ function createFloatingClientCirclePolygon(lng, lat, radiusMeters, points = 64) 
 }
 
 function findFloatingActiveUnit() {
-  if (!lastRealtimeData?.units || !activeUnitId) return null;
+  if (!lastRealtimeData?.units || !displayedUnitId) return null;
 
   return lastRealtimeData.units.find(u =>
-    String(u.unit_id) === String(activeUnitId) ||
-    String(u.vehicle_id) === String(activeUnitId)
+    String(u.unit_id) === displayedUnitId
   );
 }
 
-function buildFloatingClientsFeatureCollection() {
-  const unit = findFloatingActiveUnit();
+function buildFloatingRelatedLocations() {
+  if (!displayedUnitId) return [];
 
+  return getOrdersByUnitId(displayedUnitId).map(order => ({
+    order_id: order.order_id,
+    unit_id: order.unit_id,
+    customer_name: order.customer_name,
+    order_status_label: order.order_status_label,
+    address: order.address,
+    street_address: order.street_address,
+    city: order.city,
+    lat: order.lat,
+    lng: order.lng,
+    status: order.status
+  }));
+}
+
+function refreshFloatingContext() {
+  if (!floatingMap) return;
+
+  const unit = findFloatingActiveUnit();
+  if (!unit || unit.active !== 1) {
+    floatingRelatedLocations = [];
+    renderFloatingClients();
+    renderFloatingClientMarkers3D();
+    clearFloatingFocusInfoLabels(floatingMap);
+    return;
+  }
+
+  const vehicleContext = getVehicleContext(displayedUnitId);
+  const vehicleDetailModel = buildFloatingVehicleDetailModel(
+    vehicleContext,
+    unit
+  );
+  floatingRelatedLocations = buildFloatingRelatedLocations();
+  const orderDetailModels = floatingRelatedLocations.map(location => ({
+    ...buildFloatingOrderDetailModel(location),
+    lat: location.lat,
+    lng: location.lng
+  }));
+
+  updateFloatingFocusedVehicle(floatingMap, vehicleDetailModel);
+  setFloatingRelatedLocationLabels(floatingMap, orderDetailModels);
+  renderFloatingClients();
+  renderFloatingClientMarkers3D();
+}
+
+function renderFloatingClientMarkers3D() {
+  if (!floatingMap) return;
+
+  if (floatingRelatedLocations.length === 0) {
+    clearFloatingClientMarkers3D(floatingMap);
+    return;
+  }
+
+  const clients = floatingRelatedLocations.flatMap(client => {
+    const lat = Number(client.lat);
+    const lng = Number(client.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+
+    return [{
+      order_id: client.order_id,
+      unit_id: client.unit_id,
+      status: client.status,
+      lat,
+      lng
+    }];
+  });
+
+  updateFloatingClientMarkers3D(floatingMap, clients);
+}
+
+function buildFloatingClientsFeatureCollection() {
   const radiusColor = getCssVar('--map-client-circle-color', '#00e5ff');
-  const doneColor = getCssVar('--map-client-done-color', '#22c55e');
-  const pendingColor = getCssVar('--map-client-pending-color', '#f97316');
 
   const features = [];
 
-  if (!unit?.clients || unit.clients.length === 0) {
+  if (floatingRelatedLocations.length === 0) {
     return {
       type: 'FeatureCollection',
       features
     };
   }
 
-  unit.clients.forEach(client => {
+  floatingRelatedLocations.forEach(client => {
     if (client.lat == null || client.lng == null) return;
 
     const lat = client.lat;
     const lng = client.lng;
-    const pointColor = client.status === 40 ? doneColor : pendingColor;
 
     features.push({
       type: 'Feature',
@@ -236,17 +331,6 @@ function buildFloatingClientsFeatureCollection() {
       }
     });
 
-    features.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [lng, lat]
-      },
-      properties: {
-        kind: 'point',
-        color: pointColor
-      }
-    });
   });
 
   return {
@@ -283,7 +367,7 @@ function ensureFloatingClientsLayers() {
   }
 
   if (!map.getLayer(FLOATING_CLIENT_RADIUS_FILL_LAYER_ID)) {
-    map.addLayer({
+    const layerDefinition = {
       id: FLOATING_CLIENT_RADIUS_FILL_LAYER_ID,
       type: 'fill',
       source: FLOATING_CLIENTS_SOURCE_ID,
@@ -292,38 +376,13 @@ function ensureFloatingClientsLayers() {
         'fill-color': ['get', 'color'],
         'fill-opacity': 0.2
       }
-    });
-  }
+    };
 
-  if (!map.getLayer(FLOATING_CLIENT_RADIUS_LINE_LAYER_ID)) {
-    map.addLayer({
-      id: FLOATING_CLIENT_RADIUS_LINE_LAYER_ID,
-      type: 'line',
-      source: FLOATING_CLIENTS_SOURCE_ID,
-      filter: ['==', ['get', 'kind'], 'radius'],
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': 0.5,
-        'line-opacity': 0.4
-      }
-    });
-  }
-
-  if (!map.getLayer(FLOATING_CLIENT_POINTS_LAYER_ID)) {
-    map.addLayer({
-      id: FLOATING_CLIENT_POINTS_LAYER_ID,
-      type: 'circle',
-      source: FLOATING_CLIENTS_SOURCE_ID,
-      filter: ['==', ['get', 'kind'], 'point'],
-      paint: {
-        'circle-radius': 2,
-        'circle-color': ['get', 'color'],
-        'circle-opacity': 0.7,
-        'circle-stroke-color': ['get', 'color'],
-        'circle-stroke-width': 1,
-        'circle-stroke-opacity': 0.8
-      }
-    });
+    if (map.getLayer('floating-client-markers-3d-layer')) {
+      map.addLayer(layerDefinition, 'floating-client-markers-3d-layer');
+    } else {
+      map.addLayer(layerDefinition);
+    }
   }
 
   floatingClientsLayersReady = true;
@@ -343,7 +402,7 @@ function updateFloatingClientsSource(featureCollection) {
 }
 
 function renderFloatingClients() {
-  if (!floatingMap || !activeUnitId || !lastRealtimeData?.units) return;
+  if (!floatingMap) return;
 
   const featureCollection = buildFloatingClientsFeatureCollection();
 
@@ -395,21 +454,58 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     const res = initMap('floating-map', defaultLat, defaultLng, baseRadiusM);
     
     floatingMap = res.map;
+
+    const zoomCalibrationIndicator = document.createElement('div');
+    zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
+    zoomCalibrationIndicator.style.cssText = [
+      'position:absolute',
+      'left:10px',
+      'bottom:10px',
+      'z-index:10',
+      'padding:4px 8px',
+      'border-radius:4px',
+      'background:rgba(17,24,39,.85)',
+      'color:#fff',
+      'font:12px/1.4 monospace',
+      'pointer-events:none'
+    ].join(';');
+    const updateZoomCalibrationIndicator = () => {
+      zoomCalibrationIndicator.textContent =
+        `Zoom: ${getMapZoom(floatingMap).toFixed(1)}`;
+    };
+    floatingMap.getContainer().appendChild(zoomCalibrationIndicator);
+    floatingMap.on('zoom', updateZoomCalibrationIndicator);
+    updateZoomCalibrationIndicator();
+
+    initFloatingFocusInfoLabels(floatingMap, {
+      vehicleContainer: document.getElementById('floating-label')
+    });
+    initFloatingVehicle3D(floatingMap);
+    if (ENABLE_FLOATING_VEHICLE_3D_CALIBRATOR) {
+      initFloatingVehicle3DCalibrator(floatingMap);
+    }
+    initFloatingClientMarkers3D(floatingMap);
     setMapMinZoom(floatingMap, 15);
   
     floatingMap.on('zoomend', () => {
-      if (!activeUnitId) return;
+      if (!displayedUnitId) return;
 
       saveFloatingStatePatch({
         zoom: getMapZoom(floatingMap)
       });
 
-      updateVehicleMarkerVisualByZoom(floatingMarker, getMapZoom(floatingMap));
+      if (ENABLE_FLOATING_VEHICLE_2D && floatingMarker) {
+        updateVehicleMarkerVisualByZoom(floatingMarker, getMapZoom(floatingMap));
+      }
     });  
 }
 
 export function openFloating(unitId) {
-    activeUnitId = unitId;
+    const nextDisplayedUnitId = String(unitId);
+    if (displayedUnitId != null && displayedUnitId !== nextDisplayedUnitId) {
+      clearFloatingTrackingState();
+    }
+    displayedUnitId = nextDisplayedUnitId;
     
     stopFollow();    
 
@@ -430,14 +526,20 @@ export function openFloating(unitId) {
     } else if (emptyMessage) {
         emptyMessage.classList.add('hidden');
     }
-    showFloatingMap(unitId);    
+    showFloatingMap();
+    refreshFloatingContext();
     
     hideFollowIndicator();
     restoreFloatingMapView();
 }
 
 export function closeFloating() {
-    activeUnitId = null;
+    displayedUnitId = null;
+    floatingRelatedLocations = [];
+    setFloatingVehicle3DVisible(floatingMap, false);
+    clearFloatingClientMarkers3D(floatingMap);
+    renderFloatingClients();
+    clearFloatingFocusInfoLabels(floatingMap);
     clearUnitMarkerHighlight();
     
     clearFloatingTrackingState(); 
@@ -449,20 +551,23 @@ export function closeFloating() {
 
 export function updateFloating(markersRef, dt = 0) {  
 
-  if (!floatingMap || !activeUnitId) return;
+  if (!floatingMap || !displayedUnitId) return;
 
-  const marker = markersRef.get(activeUnitId);
+  const marker = markersRef.get(displayedUnitId);
   if (!marker) return;
 
-  //const p = marker.getLatLng();
   const p = marker.__lastPoint || getVehicleMarkerPosition(marker);
   if (!p) return;
 
   // crear marker si no existe
-  if (!floatingMarker) {    
-    floatingMarker = createVehicleMarker(floatingMap, p, getMapZoom(floatingMap));
+  if (!floatingMotion) {
+    if (ENABLE_FLOATING_VEHICLE_2D) {
+      floatingMarker = createVehicleMarker(floatingMap, p, getMapZoom(floatingMap));
+    }
+    setFloatingVehicle3DPosition(floatingMap, p);
+    setFloatingVehicle3DVisible(floatingMap, true);
 
-    floatingMotion = new UnitMotion(floatingMarker);
+    floatingMotion = new UnitMotion(floatingMarker || { setLngLat() {} });
     floatingMotion.setInitialPoint(p);
     lastFloatingServerPoint = p;
 
@@ -484,12 +589,19 @@ export function updateFloating(markersRef, dt = 0) {
       floatingMotion.snapTo(p);
     }
 
-    updateOrientation({
-      marker: floatingMarker,
+    const orientation = updateOrientation({
+      marker: ENABLE_FLOATING_VEHICLE_2D ? floatingMarker : null,
       lastPoint: lastPoint,
       currPoint: p,
       state: (lastPoint && (lastPoint.lat !== p.lat || lastPoint.lng !== p.lng)) ? 'MOVING' : 'STOPPED'
     });
+
+    if (orientation != null) {
+      setFloatingVehicle3DBearing(
+        floatingMap,
+        orientation.geographicBearingDeg
+      );
+    }
 
     lastPoint = p;
     lastFloatingServerPoint = p;
@@ -499,7 +611,14 @@ export function updateFloating(markersRef, dt = 0) {
     floatingMotion.tick(dt);
   }
 
-  panMapTo(floatingMap, getVehicleMarkerPosition(floatingMarker));
+  const currentPosition = ENABLE_FLOATING_VEHICLE_2D
+    ? getVehicleMarkerPosition(floatingMarker)
+    : floatingMotion?.virtualPos;
+  if (currentPosition) {
+    setFloatingVehicle3DPosition(floatingMap, currentPosition);
+  }
+
+  panMapTo(floatingMap, currentPosition);
 }
 
 export function enableFloatingDrag() {
@@ -529,9 +648,7 @@ export function enableFloatingClose() {
     closeFloating();
     refreshMainMapAfterLayoutChange();
 
-    if (window.AppState) {
-      window.AppState.activeUnitId = null;
-    }
+    clearFocusedUnitId();
 
     document.dispatchEvent(new Event('grid:sync'));
     stopFollow();
@@ -567,7 +684,10 @@ export function refreshFloatingMapView() {
 
   invalidateMapSize(floatingMap);
 
-  if (floatingMarker) {
-    panMapTo(floatingMap, getVehicleMarkerPosition(floatingMarker));
+  if (floatingMotion) {
+    const currentPosition = ENABLE_FLOATING_VEHICLE_2D
+      ? getVehicleMarkerPosition(floatingMarker)
+      : floatingMotion.virtualPos;
+    panMapTo(floatingMap, currentPosition);
   }
 }

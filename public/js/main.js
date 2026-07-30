@@ -4,7 +4,11 @@ import { loadFleetFromDB } from './fleet/fleet.data.js';
 import { initMap } from './map/map.init.js';
 import { createModeHandlers } from './modes/modes.handlers.js';
 import { wireUI } from './ui/ui.wiring.js';
-import { AppState } from './state/unit.state.js';
+import {
+  AppState,
+  clearFocusedUnitId,
+  getFocusedUnitId
+} from './state/unit.state.js';
 window.AppState = AppState; // TEMP global for UI sync (sidebar)
 AppState.mode = 'FLOATING';
 AppState.mainViewMode = 'FIT_ALL';
@@ -19,6 +23,9 @@ import { saveFloatingStatePatch } from './map/map.floating.state.js';
 import { createLayerGroup, invalidateMapSize } from './map/map.adapter.js';     
 import { initMapCameraUI } from './map/map.camera.ui.js';
 import { initMapStyleUI } from './map/map.style.ui.js';
+import { initMapLabelsUI } from './map/map.labels.ui.js';
+import { runMap360Demo } from './map/map.demo.rotation.js';
+import { initMap3DLab } from './map/3d/map.3d.lab.js';
 
 let TENANT_ID = null;
 let realtimeInstance = null;
@@ -58,15 +65,55 @@ fetch('/session_info.php')
 window.isReconnecting = false;
 
 function getActiveUnitFromState() {
-  return AppState.activeUnitId;
+  return getFocusedUnitId();
 }
 
 function initApp(defaultLat, defaultLng, baseRadiusM) {
     
     const { map, replayLayer, realtimeLayer } = initMap('map', defaultLat, defaultLng, baseRadiusM); //initMap(defaultLat, defaultLng, baseRadiusM);
     window.mainMap = map;
+
+    const zoomCalibrationIndicator = document.createElement('div');
+    zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
+    zoomCalibrationIndicator.style.cssText = [
+      'position:absolute',
+      'left:10px',
+      'bottom:10px',
+      'z-index:10',
+      'padding:4px 8px',
+      'border-radius:4px',
+      'background:rgba(17,24,39,.85)',
+      'color:#fff',
+      'font:12px/1.4 monospace',
+      'pointer-events:none'
+    ].join(';');
+    const updateZoomCalibrationIndicator = () => {
+      zoomCalibrationIndicator.textContent = `Zoom: ${map.getZoom().toFixed(1)}`;
+    };
+    map.getContainer().appendChild(zoomCalibrationIndicator);
+    map.on('zoomend', updateZoomCalibrationIndicator);
+    updateZoomCalibrationIndicator();
+
     initMapCameraUI(map);
     initMapStyleUI(map);
+    initMap3DLab(map, {
+      enabled: true
+    });
+
+    // --------------  conexión botón 360 grados ----------------------
+    const btnMapDemo360 = document.getElementById('btnMapDemo360');
+
+    if (btnMapDemo360) {
+      btnMapDemo360.addEventListener('click', () => {
+        runMap360Demo(map, {
+          secondsPerTurn: 100,
+          pitch: map.getPitch(),
+          //clockwise: true
+          clockwise: false
+        });
+      });
+    }
+    // ----------------------------------------------------------------
 
     initFloatingMap(defaultLat, defaultLng, baseRadiusM);
     enableFloatingDrag();
@@ -81,7 +128,8 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
       map,      
       layer: createLayerGroup(map),      
       url: '/api/realtime/get_units_realtime_v2.php'
-    });        
+    });
+    initMapLabelsUI(map);
 
     const viewportFlags = {
       viewportMode: 'AUTO',
@@ -135,10 +183,8 @@ const initialViewportTimer = setInterval(() => {
           stopFocusMode();
           viewport.fitAllNow();
     
-          if (window.AppState) {
-            window.AppState.activeUnitId = null;
-            document.dispatchEvent(new Event('grid:sync'));
-          }
+          clearFocusedUnitId();
+          document.dispatchEvent(new Event('grid:sync'));
     
           document.querySelectorAll('.row.active')
             .forEach(e => e.classList.remove('active'));
@@ -157,10 +203,8 @@ const initialViewportTimer = setInterval(() => {
     const btnModeFloating = document.getElementById('modeFloating');
     
     function resetSelection() {
-      if (window.AppState) {
-        window.AppState.activeUnitId = null;
-        document.dispatchEvent(new Event('grid:sync'));
-      }
+      clearFocusedUnitId();
+      document.dispatchEvent(new Event('grid:sync'));
     
       document.querySelectorAll('.row.active')
         .forEach(e => e.classList.remove('active'));
@@ -169,7 +213,7 @@ const initialViewportTimer = setInterval(() => {
     if (btnModeMap) {
       btnModeMap.addEventListener('click', () => {
           
-        const unitId = window.AppState?.activeUnitId;
+        const unitId = getFocusedUnitId();
         
         AppState.mode = 'MAP';
         closeFloating();
@@ -189,7 +233,7 @@ const initialViewportTimer = setInterval(() => {
     if (btnModeFloating) {
       btnModeFloating.addEventListener('click', () => {
           
-        const unitId = window.AppState?.activeUnitId;
+        const unitId = getFocusedUnitId();
         
         AppState.mode = 'FLOATING';
         
@@ -230,10 +274,8 @@ const initialViewportTimer = setInterval(() => {
         viewport.onUserMovedMap();
         closeFloating();
     
-        if (window.AppState) {
-          window.AppState.activeUnitId = null;
-          document.dispatchEvent(new Event('grid:sync'));
-        }
+        clearFocusedUnitId();
+        document.dispatchEvent(new Event('grid:sync'));
         document.querySelectorAll('.row.active')
           .forEach(e => e.classList.remove('active'));
       }

@@ -65,7 +65,7 @@ export function renderOrdersDonut(json) {
   .trim();
 
   const colors = hasData
-    ? ['#d9d9d9', '#6f6f6f', '#22c55e']
+    ? ['#725959', '#54A1F7', '#22c55e']
     : [neutralColor];
 
 

@@ -14,6 +14,9 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     pitch: 55,
     maxPitch: 80,
     bearing: -18,
+    canvasContextAttributes: {
+      antialias: true
+    },
     style: getMapLibreStyle()
   });
   installMissingIconHandler(map);

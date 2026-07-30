@@ -37,12 +37,20 @@ export function updateOrientation({
   state,
   iconOffsetDeg = DEFAULT_ICON_OFFSET_DEG
 }) {
-  if (!marker) return;
-  if (!lastPoint || !currPoint) return;
+  if (!lastPoint || !currPoint) return null;
 
   // OFFLINE / STOPPED / NO_DATA → NO rotar
-  if (state !== 'MOVING') return;
+  if (state !== 'MOVING') return null;
 
-  const deg = bearingDeg(lastPoint, currPoint) + iconOffsetDeg;
-  setMarkerBearing(marker, deg);
+  const geographicBearingDeg = bearingDeg(lastPoint, currPoint);
+  const markerBearingDeg = geographicBearingDeg + iconOffsetDeg;
+
+  if (marker) {
+    setMarkerBearing(marker, markerBearingDeg);
+  }
+
+  return {
+    geographicBearingDeg,
+    markerBearingDeg
+  };
 }

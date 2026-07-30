@@ -1,0 +1,125 @@
+
+
+
+/* ----- ÍCONOS DE TÍTULO DE ESTADOS OPERATIVOS Y FLUJO OPERATIVO ------ */
+/* -------------  SEÑAL, MOVIMIENTO Y UBICACION ------------------------ */
+/* -------------  FLUJO OPERATIVO -------------------------------------- */
+.kpi-icono-titulo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.5;
+}
+
+/* -----------------------  ESTADOS OPERATIVOS ---------------------------- */
+.kpi-icono-interno-chico { /* íconos de señal y movimiento */
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.kpi-location-icon { /* íconos de ubicación */
+  width: 25px;
+  height: 25px;
+  display: block;
+  object-fit: contain;
+  opacity: 0.6;
+}
+/* --------------------------- GRÁFICOS LINEALES -------------------------- */
+.kpi-icono-interno-grande { 
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+   opacity: 0.6;
+}
+/* -------------------------- FLUJO OPERATIVO ----------------------------- */
+.kpi-orders-legend-icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+  object-fit: contain;
+  opacity: 0.6;
+}
+/* --------------------------ENCABEZADO DE GRILLA ------------------------------- */
+.grid-header-icon {
+  object-fit: contain;
+  display: block;
+  opacity: 0.5;
+}
+
+.header-icon-signal {
+  width: 20px;
+  height: 20px;
+}
+.header-icon-activity {
+  width: 25px;
+  height: 25px;
+}
+
+.header-icon-base {
+  width: 23px;
+  height: 23px;
+}
+.header-icon-street {
+  width: 24px;
+  height: 29px;
+}
+.header-icon-customer {
+  width: 23px;
+  height: 23px;
+}
+
+.header-icon-boxes {
+  width: 33px;
+  height: 28px;
+}
+.header-icon-assigment {
+  width: 23px;
+  height: 23px;
+}
+.header-icon-loaded {
+  width: 29px;
+  height: 25px;
+}
+.header-icon-delivered {
+  width: 24px;
+  height: 23px;
+}
+/* ----------------- FILAS GRILLA ------------------------------ */
+.signal-img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
+.signal-img-ok {
+  opacity: 0.7;
+}
+.signal-img-no {
+  opacity: 0.5;
+}
+
+ .move-img { 
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
+.move-ok {
+  opacity: 0.70;
+}
+.move-stop {
+  opacity: 0.35;
+}
+
+.location-img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.6;
+}
+/* -------------------------------------------------------------- */

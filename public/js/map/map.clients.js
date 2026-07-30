@@ -4,8 +4,7 @@
 
 const CLIENTS_SOURCE_ID = 'geo-clients-source';
 const CLIENT_RADIUS_FILL_LAYER_ID = 'geo-clients-radius-fill';
-const CLIENT_RADIUS_LINE_LAYER_ID = 'geo-clients-radius-line';
-const CLIENT_POINTS_LAYER_ID = 'geo-clients-points';
+const CLIENT_CIRCLES_MIN_ZOOM = 15;
 
 const CLIENT_RADIUS_METERS = 70;
 
@@ -47,8 +46,6 @@ function buildClientsFeatureCollection(data) {
   const rootStyles = getComputedStyle(document.documentElement);
 
   const radiusColor = getCssVar('--map-client-circle-color', '#00e5ff');
-  const doneColor = getCssVar('--map-client-done-color', '#22c55e');
-  const pendingColor = getCssVar('--map-client-pending-color', '#f97316');
 
   const features = [];
 
@@ -61,8 +58,6 @@ function buildClientsFeatureCollection(data) {
 
       const lat = client.lat;
       const lng = client.lng;
-      const status = client.status;
-      const pointColor = status === 40 ? doneColor : pendingColor;
 
       features.push({
         type: 'Feature',
@@ -78,17 +73,6 @@ function buildClientsFeatureCollection(data) {
         }
       });
 
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [lng, lat]
-        },
-        properties: {
-          kind: 'point',
-          color: pointColor
-        }
-      });
     });
   });
 
@@ -126,47 +110,23 @@ function ensureClientsLayers(map) {
   }
 
   if (!map.getLayer(CLIENT_RADIUS_FILL_LAYER_ID)) {
-    map.addLayer({
+    const layerDefinition = {
       id: CLIENT_RADIUS_FILL_LAYER_ID,
       type: 'fill',
       source: CLIENTS_SOURCE_ID,
+      minzoom: CLIENT_CIRCLES_MIN_ZOOM,
       filter: ['==', ['get', 'kind'], 'radius'],
       paint: {
         'fill-color': ['get', 'color'],
         'fill-opacity': 0.2
       }
-    });
-  }
+    };
 
-  if (!map.getLayer(CLIENT_RADIUS_LINE_LAYER_ID)) {
-    map.addLayer({
-      id: CLIENT_RADIUS_LINE_LAYER_ID,
-      type: 'line',
-      source: CLIENTS_SOURCE_ID,
-      filter: ['==', ['get', 'kind'], 'radius'],
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': 0.5,
-        'line-opacity': 0.4
-      }
-    });
-  }
-
-  if (!map.getLayer(CLIENT_POINTS_LAYER_ID)) {
-    map.addLayer({
-      id: CLIENT_POINTS_LAYER_ID,
-      type: 'circle',
-      source: CLIENTS_SOURCE_ID,
-      filter: ['==', ['get', 'kind'], 'point'],
-      paint: {
-        'circle-radius': 2,
-        'circle-color': ['get', 'color'],
-        'circle-opacity': 0.7,
-        'circle-stroke-color': ['get', 'color'],
-        'circle-stroke-width': 1,
-        'circle-stroke-opacity': 0.8
-      }
-    });
+    if (map.getLayer('map-3d-lab-client-marker')) {
+      map.addLayer(layerDefinition, 'map-3d-lab-client-marker');
+    } else {
+      map.addLayer(layerDefinition);
+    }
   }
 
   clientsLayersReady = true;

@@ -10,8 +10,8 @@ export function renderSignalCell(u) {
 // La alerta real debería calcularse combinando:
 // tiempo sin señal + ubicación + pedidos activos + criticidad operativa.
   const img = noSignal
-    ? '/assets/images/grid/signal-no.png'
-    : '/assets/images/grid/signal-ok.png';
+    ? '/assets/images/icons/signal-no_w.png'
+    : '/assets/images/icons/signal-ok_w.png';
 
   const signalImgClass = noSignal ? 'signal-img-no' : 'signal-img-ok';  
 
@@ -35,8 +35,8 @@ export function renderMotionCell(u) {
     const isMoving = u.tech_state === 'MOVING';
 
     const img = isMoving
-      ? '/assets/images/grid/moving.png'
-      : '/assets/images/grid/stopped.png';      
+      ? '/assets/images/icons/truck_w.png'
+      : '/assets/images/icons/stopped_w.png';      
 
     const moveClass = isMoving ? 'move-ok' : 'move-stop';
 
@@ -68,7 +68,7 @@ export function renderStateSlot(u, slot) {
 
   return `
     <img 
-      src="/assets/images/grid/location.png" 
+      src="/assets/images/icons/location_w.png" 
       class="location-img" 
       title="${slot}"
       alt="${slot}" 
@@ -100,6 +100,12 @@ export function renderOrdersCell(u, maxTotal, gridViewMode) {
   `;  
 }
 // ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+// Ruta de nodos desactivada temporalmente.
+// Motivo:
+// - costo visual y operativo alto en primera capa
+// - posible reutilización futura en detalle, foco o fila expandida
+/*
 export function renderTimeline(u, base) {
   let clients = u.clients || [];
 
@@ -129,3 +135,4 @@ export function renderTimeline(u, base) {
     </div>
   `;
 }
+*/  

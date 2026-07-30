@@ -239,10 +239,32 @@
   grid-column: 1 / 4;
   grid-row: 1;
 
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   font-size: 16px;
   line-height: 18px;
   font-weight: bold;
   color: var(--kpi-title-color);
+}
+
+.kpi-group-fleet {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kpi-group-fleet-label {
+  opacity: 0.75;
+}
+
+.kpi-group-fleet-value {
+  color: var(--kpi-value-color);
+  font-weight: 700;
 }
 
 .kpi-column-status,
@@ -296,14 +318,6 @@
   color: var(--kpi-title-color);
 }
 
-.kpi-icono-titulo {
-  width: 24px;
-  height: 24px;
-  vertical-align: middle;
-  margin-right: 4px;
-  opacity: 0.7;
-}
-
 /* =========================================================
    10) CONTENEDOR DE CARDS
 
@@ -342,7 +356,7 @@
   padding: 4px 8px;
 
   /* border: 0.5px solid var(--kpi-card-border); */
-  border: 1px solid #00000020;
+  border: 1px solid #555555;
   border-radius: 6px;
 
   display: flex;
@@ -446,8 +460,49 @@
 
    Nota:
    - actualmente las barras pueden estar definidas en otro CSS / tema.
-   - no se agregan reglas acá para no cambiar visualmente el tablero.
-========================================================= */
+   - no se agregan reglas acá para no cambiar visualmente el tablero. */
+
+  .kpi-location-bars-card {
+    width: 100%;
+    flex: 1;
+    padding: 8px;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .kpi-location-bar-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 20px;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kpi-location-label,
+  .kpi-location-value {
+    font-size: 12px;
+    color: var(--kpi-value-color);
+  }
+
+  .kpi-location-track {
+    height: 7px;
+    border-radius: 20px;
+    background: #ffffff18;
+    overflow: hidden;
+  }
+
+  .kpi-location-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 20px;
+    background: #9ca3af;
+  }   
+
+  .kpi-location-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }  
+/* ========================================================= */
 
 /* =========================================================
    15) AJUSTES ESPECÍFICOS POR BLOQUE
@@ -463,13 +518,6 @@
   text-align: center;
   gap: 4px;
   font-size: 13px;
-}
-
-.kpi-block-signal .kpi-icono-titulo,
-.kpi-block-activity .kpi-icono-titulo,
-.kpi-block-location .kpi-icono-titulo {
-  margin-right: 0;
-  margin-bottom: 0;
 }
 
 /* Estados Operativos: misma estructura vertical interna */
@@ -552,17 +600,7 @@
 /* =========================================================
    17) ÍCONOS INTERNOS DEL CARD
 ========================================================= */
-.kpi-icono-interno-grande {
-  width: 36px;
-  height: 36px;
-  opacity: 1;
-}
 
-.kpi-icono-interno-chico {
-  width: 17px;
-  height: 17px;
-  opacity: 1;
-}
 
 /* =========================================================
    18) PATRÓN PARA NUEVOS MÓDULOS KPI

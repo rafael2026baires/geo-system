@@ -177,7 +177,21 @@ try {
         throw $e;
     }
 
+    $tripWasCreated = $stmt->rowCount() === 1;
     $tripId = $pdo->lastInsertId();
+
+    if ($tripWasCreated) {
+        $tripCode = 'VIA-' . date('Ymd', strtotime($now)) . '-' . $tripId;
+
+        $stmt = $pdo->prepare("
+            UPDATE trips
+            SET trip_code = ?
+            WHERE id = ?
+              AND tenant_id = ?
+        ");
+
+        $stmt->execute([$tripCode, $tripId, $tenantId]);
+    }
 
     // update order
     $stmt = $pdo->prepare("

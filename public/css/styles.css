@@ -384,6 +384,14 @@ header button:hover {
   background: transparent;
 }
 
+/* con esto doy lugar a q funcione la redimensión de la vent sec */
+.resize-left,
+.resize-right,
+.resize-bottom,
+.floating-resize {
+  z-index: 30;
+}
+
 #floating-close {
   position: absolute;
   top: 4px;

@@ -1,6 +1,7 @@
 import { renderKPIs } from '../ui/kpi.render.js';
 import { renderSignalMiniChart, renderActivityMiniChart, renderLocationChart, renderOrdersChart } from '../charts/kpi.charts.js';
 import { initStreetRhythmChart, initStreetAccumChart } from '../charts/operational.charts.js';
+import { renderGrid } from '../grid/grid.render.js';
 
 export function renderRealtimeDashboard(json) {
 
@@ -16,6 +17,7 @@ export function renderRealtimeDashboard(json) {
   initStreetRhythmChart();
   initStreetAccumChart();
 
-  window.renderGrid(json.units, json.base);
+  const gridUnits = json.units.map(({ clients, ...unit }) => unit);
+  renderGrid(gridUnits, json.base);
 
 }

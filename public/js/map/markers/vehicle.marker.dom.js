@@ -7,9 +7,9 @@ import {
 
 function resolveVehicleMarkerVisualByZoom(zoom) {
   if (zoom < 13) return { type: 'dot', size: 5 };
-  if (zoom < 15) return { type: 'truck', size: 12 };
-  if (zoom < 16) return { type: 'truck', size: 14 };
-  if (zoom < 18) return { type: 'truck', size: 20 };
+  if (zoom < 15) return { type: 'truck', size: 10 };
+  if (zoom < 16) return { type: 'truck', size: 13 };
+  if (zoom < 18) return { type: 'truck', size: 18 };
   return { type: 'truck', size: 25 };
 }
 

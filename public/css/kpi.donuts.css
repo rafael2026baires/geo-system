@@ -62,21 +62,6 @@
 
 
 /* =========================================================
-   3) DONA UBICACIÓN
-========================================================= */
-
-.kpi-location-donut-card {
-  --donut-size: 86px;
-  --donut-gap: 8px;
-}
-
-.kpi-location-donut-layout .kpi-donut-wrap {
-  width: var(--donut-size);
-  height: var(--donut-size);
-}
-
-
-/* =========================================================
    4) DONA FLUJO OPERATIVO
 ========================================================= */
 
@@ -151,17 +136,26 @@
 }
 
 .kpi-donut-dot-1 {
-  background: #d9d9d9;
+  background: #725959;
 }
 
 .kpi-donut-dot-2 {
-  background: #938b96;
+  background: #54A1F7;
 }
 
 .kpi-donut-dot-3 {
-  background: #5f5c5c;
+  background: #22c55e;
 }
 
-.kpi-orders-donut-layout .kpi-donut-dot-3 {
-  background: #22c55e;
+.kpi-orders-legend-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-orders-legend-icon {
+  width: 27px;
+  height: 27px;
+  display: block;
+  object-fit: contain;  
 }

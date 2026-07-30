@@ -1,22 +1,27 @@
 import { focusUnit, followUnit, highlightUnitMarker } from '../map/map.camera.control.js';
 import { openFloating, closeFloating } from '../map/map.floating.js';
+import { getFocusedUnitId, setFocusedUnitId } from '../state/unit.state.js';
 
 export function syncGridSelection() {
-  const activeId = window.AppState?.activeUnitId;
+  const activeId = getFocusedUnitId();
 
-  document.querySelectorAll('[data-unit]').forEach(el => {
-    if (el.dataset.unit === activeId) {
-      el.classList.add('grid-active');
-    } else {
-      el.classList.remove('grid-active');
+  document.querySelectorAll('[data-row-unit]').forEach(firstCell => {
+    const isActive = firstCell.dataset.rowUnit === activeId;
+    let cell = firstCell;
+
+    while (cell) {
+      if (cell.classList.contains('item')) {
+        cell.classList.toggle('grid-active', isActive);
+      }
+
+      cell = cell.nextElementSibling;
+      if (cell?.hasAttribute('data-row-unit')) break;
     }
   });
 }
 
 function setActiveUnit(unitId) {
-  if (window.AppState) {
-    window.AppState.activeUnitId = unitId;
-  }
+  setFocusedUnitId(unitId);
 
   syncGridSelection();
   highlightUnitMarker(unitId);
