@@ -8,7 +8,7 @@ SUPERSEDED = 50
 */
 
 require_once __DIR__ . '/../../bootstrap.php';
-require_once __DIR__ . '/../../../services/ResourceSuggestionService.php';
+require_once __DIR__ . '/../../../../services/ResourceSuggestionService.php';
 require_once __DIR__ . '/../../../../services/CacheInvalidationService.php';
 
 try {

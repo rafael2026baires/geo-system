@@ -1,6 +1,6 @@
 <?php
 
-include('/home2/pymebit/private/conexion_base_geo.php');
+require_once __DIR__ . '/../../../config/conexion_base.php';
 $pdo = new Conexion();
 
 header('Content-Type: application/json');
