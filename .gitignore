@@ -1,7 +1,12 @@
 .env.*
 .env
 *.md
+!tools/README.md
 docs/
 _support/
 legacy/
 _tmp/
+codex_resultado*.txt
+tools/**/__pycache__/
+*.py[cod]
+public/assets/models/3d/preview/
