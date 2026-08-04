@@ -61,7 +61,7 @@ async function manejarBusqueda() {
         resultadosDiv.innerHTML = "";
         return;
     }
-    const resp = await fetch("/api/operations/entry/search_customer_addresses.php?tenant_id=" + tenantId + "&customer_id=" + customerId + "&q=" + texto)
+    const resp = await fetch("/api/catalogs/customers/search_customer_addresses.php?tenant_id=" + tenantId + "&customer_id=" + customerId + "&q=" + texto)
     const data = await resp.json();
     
     
