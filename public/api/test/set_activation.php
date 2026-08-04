@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../../../config/technical_access.php';
+require_local_technical_access();
+
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../../config/redis.php';
 

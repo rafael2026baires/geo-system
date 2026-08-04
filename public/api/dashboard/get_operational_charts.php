@@ -10,10 +10,7 @@ header('Content-Type: application/json; charset=utf-8');
 $tenantId = $_SESSION['tenant_id'] ?? null;
 
 if (!$tenantId) {
-    $tenantId = 1; // SOLO TEST LOCAL
-}
-
-if (!$tenantId) {
+    http_response_code(401);
     echo json_encode([
         'ok' => false,
         'error' => 'NO_TENANT',

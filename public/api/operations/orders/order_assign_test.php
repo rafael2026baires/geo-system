@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../../../../config/technical_access.php';
+require_local_technical_access();
+
 /*
 REFERENCIAS SQL EN BASE DE DATOS order_assignments
 ACTIVE = 1
