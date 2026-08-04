@@ -1,7 +1,4 @@
 <?php
-require_once __DIR__ . '/../../../config/technical_access.php';
-require_local_technical_access();
-
 header('Content-Type: application/json; charset=utf-8');
 
 try {
