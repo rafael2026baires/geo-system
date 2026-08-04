@@ -1,4 +1,4 @@
-import { animateMove, pollLastPoint, clearReplay } from './common/helpers.js';
+import { animateMove, clearReplay } from './common/helpers.js';
 import { createVehicleMarker } from './map/markers/vehicle.marker.js';
 import { loadFleetFromDB } from './fleet/fleet.data.js';
 import { initMap } from './map/map.init.js';
@@ -317,7 +317,6 @@ const initialViewportTimer = setInterval(() => {
       realtimeLayer,
       TENANT_ID,
       startRealtimeMulti: () => {},
-      pollLastPoint,
       animateMove,
       createVehicleMarker,
       clearReplay,

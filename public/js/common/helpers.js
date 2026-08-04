@@ -43,12 +43,6 @@ export function stopRealtimeAnimation() {
   }
 }
 
-export async function pollLastPoint(tenantId, unitId, lastTs) {
-  const url = `last_point.php?tenantId=${tenantId}&unitId=${unitId}&lastTs=${encodeURIComponent(lastTs)}`;
-  const res = await fetch(url);
-  return await res.json(); // puede ser null
-}
-
 export function clearReplay(map) {
   map.eachLayer(layer => {
     if (layer instanceof L.Marker || layer instanceof L.Polyline) {

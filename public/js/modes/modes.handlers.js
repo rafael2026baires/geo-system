@@ -13,7 +13,6 @@ export function createModeHandlers({
   startRealtime,
   stopRealtime,
   startRealtimeMulti,
-  pollLastPoint,
   animateMove,
   createVehicleMarker,
   clearReplay,
