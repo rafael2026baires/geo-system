@@ -1,5 +1,6 @@
 const DEFAULT_FALLBACK_FACTOR = 1;
 const VALID_EDGE_MODES = new Set(['clamp', 'exponential']);
+const temporaryOverridesByPoints = new WeakMap();
 
 function resolveFallbackFactor(edgePolicy) {
   const fallbackFactor = Number(edgePolicy?.fallbackFactor);
@@ -9,14 +10,8 @@ function resolveFallbackFactor(edgePolicy) {
     : DEFAULT_FALLBACK_FACTOR;
 }
 
-function isValidConfiguration(points, edgePolicy) {
+function isValidPoints(points) {
   if (!Array.isArray(points) || points.length < 2) return false;
-  if (
-    !VALID_EDGE_MODES.has(edgePolicy?.below) ||
-    !VALID_EDGE_MODES.has(edgePolicy?.above)
-  ) {
-    return false;
-  }
 
   return points.every((point, index) => {
     const isValidPoint =
@@ -30,13 +25,25 @@ function isValidConfiguration(points, edgePolicy) {
   });
 }
 
+function isValidConfiguration(points, edgePolicy) {
+  if (!isValidPoints(points)) return false;
+  if (
+    !VALID_EDGE_MODES.has(edgePolicy?.below) ||
+    !VALID_EDGE_MODES.has(edgePolicy?.above)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function ensureValidFactor(factor, fallbackFactor) {
   return Number.isFinite(factor) && factor > 0
     ? factor
     : fallbackFactor;
 }
 
-export function resolveZoomScaleFactor(
+function resolveZoomScaleFactorFromPoints(
   currentZoom,
   points,
   edgePolicy = {}
@@ -91,4 +98,66 @@ export function resolveZoomScaleFactor(
   }
 
   return ensureValidFactor(lastPoint.factor, fallbackFactor);
+}
+
+export function setTemporaryZoomScaleOverride(
+  sourcePoints,
+  temporaryPoints
+) {
+  if (!Array.isArray(sourcePoints)) {
+    throw new TypeError('sourcePoints debe ser un array.');
+  }
+
+  const normalizedPoints = Array.isArray(temporaryPoints)
+    ? temporaryPoints.map(point => ({
+        zoom: Number(point?.zoom),
+        factor: Number(point?.factor)
+      }))
+    : null;
+
+  if (!isValidPoints(normalizedPoints)) {
+    throw new TypeError(
+      'temporaryPoints requiere al menos dos puntos, zooms crecientes y factores positivos.'
+    );
+  }
+
+  const storedPoints = Object.freeze(
+    normalizedPoints.map(point => Object.freeze({ ...point }))
+  );
+  temporaryOverridesByPoints.set(sourcePoints, storedPoints);
+
+  return storedPoints;
+}
+
+export function clearTemporaryZoomScaleOverride(sourcePoints) {
+  if (!Array.isArray(sourcePoints)) return false;
+  return temporaryOverridesByPoints.delete(sourcePoints);
+}
+
+export function getTemporaryZoomScaleOverride(sourcePoints) {
+  if (!Array.isArray(sourcePoints)) return null;
+  return temporaryOverridesByPoints.get(sourcePoints) || null;
+}
+
+export function resolveZoomScaleFactorWithoutOverride(
+  currentZoom,
+  points,
+  edgePolicy = {}
+) {
+  return resolveZoomScaleFactorFromPoints(currentZoom, points, edgePolicy);
+}
+
+export function resolveZoomScaleFactor(
+  currentZoom,
+  points,
+  edgePolicy = {}
+) {
+  const effectivePoints =
+    temporaryOverridesByPoints.get(points) || points;
+
+  return resolveZoomScaleFactorFromPoints(
+    currentZoom,
+    effectivePoints,
+    edgePolicy
+  );
 }

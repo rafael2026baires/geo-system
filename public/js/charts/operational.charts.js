@@ -17,16 +17,52 @@ const lineShadowPlugin = {
     const { ctx } = chart;
 
     ctx.save();
-  ctx.shadowColor = '#00000085';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 4;
+    ctx.shadowColor = '#00000085';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 4;
   },
 
   afterDatasetDraw(chart) {
     chart.ctx.restore();
   }
 };
+
+function createLineAreaGradient(context) {
+  const { chart, dataset } = context;
+  const borderColor = dataset?.borderColor;
+  const match = typeof borderColor === 'string'
+    ? borderColor.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+    : null;
+
+  if (!match) return '#00000000';
+
+  const rgb = match[1].length === 3
+    ? match[1].split('').map(character => character.repeat(2)).join('')
+    : match[1];
+  const colorWithOpacity = opacity => {
+    const alpha = Math.round(Math.min(1, Math.max(0, opacity)) * 255)
+      .toString(16)
+      .padStart(2, '0');
+
+    return `#${rgb}${alpha}`;
+  };
+
+  if (!chart.chartArea) return colorWithOpacity(0);
+
+  const gradient = chart.ctx.createLinearGradient(
+    0,
+    chart.chartArea.top,
+    0,
+    chart.chartArea.bottom
+  );
+
+  gradient.addColorStop(0, colorWithOpacity(0.40));
+  gradient.addColorStop(0.55, colorWithOpacity(0.18));
+  gradient.addColorStop(1, colorWithOpacity(0));
+
+  return gradient;
+}
 
 function getThemeColor(cssVarName) {
   return getComputedStyle(document.documentElement)
@@ -173,7 +209,8 @@ export function initStreetRhythmChart() {
         {
           data: emptyChartData.delivered_rhythm,
           tension: 0.25,
-          fill: false,
+          fill: true,
+          backgroundColor: createLineAreaGradient,
 
           //borderColor: getThemeColor('--chart-line-color'),
           borderColor: '#20cf35',
@@ -208,7 +245,8 @@ export function initStreetAccumChart() {
         {
           data: emptyChartData.delivered_accumulated,
           tension: 0.25,
-          fill: false,
+          fill: true,
+          backgroundColor: createLineAreaGradient,
 
           //borderColor: getThemeColor('--chart-line-color'),
           borderColor: '#20cf35',
@@ -241,7 +279,8 @@ export function initBaseRhythmChart() {
         {
           data: [],
           tension: 0.25,
-          fill: false,
+          fill: true,
+          backgroundColor: createLineAreaGradient,
           //borderColor: getThemeColor('--chart-line-color'),
           borderColor: '#54A1F7',
           pointBackgroundColor: getThemeColor('--chart-line-color'),
@@ -272,7 +311,8 @@ export function initBaseAccumChart() {
         {
           data: [],
           tension: 0.25,
-          fill: false,
+          fill: true,
+          backgroundColor: createLineAreaGradient,
           //borderColor: getThemeColor('--chart-line-color'),
           borderColor: '#54A1F7',
           pointBackgroundColor: getThemeColor('--chart-line-color'),

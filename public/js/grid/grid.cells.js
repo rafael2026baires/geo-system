@@ -68,7 +68,7 @@ export function renderStateSlot(u, slot) {
 
   return `
     <img 
-      src="/assets/images/icons/location_w.png" 
+      src="/assets/images/icons/truck_w.png" 
       class="location-img" 
       title="${slot}"
       alt="${slot}" 

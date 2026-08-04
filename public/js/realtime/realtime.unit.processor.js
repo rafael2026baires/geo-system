@@ -7,8 +7,7 @@ import { getMapZoom } from '../map/map.adapter.js';
 import { createVehicleMarker, setVehicleMarkerOpacity, removeVehicleMarkerFromLayer} from '../map/markers/vehicle.marker.js';
 import {
   upsertVehicleFleet3DInstance,
-  setVehicleFleet3DPosition,
-  setVehicleFleet3DBearing,
+  setVehicleFleet3DPosition,  setVehicleFleet3DBearing,
   setVehicleFleet3DVisible,
   removeVehicleFleet3DInstance
 } from '../map/3d/vehicle.fleet.3d.layer.js';

@@ -4,7 +4,7 @@
 
 const CLIENTS_SOURCE_ID = 'geo-clients-source';
 const CLIENT_RADIUS_FILL_LAYER_ID = 'geo-clients-radius-fill';
-const CLIENT_CIRCLES_MIN_ZOOM = 15;
+const CLIENT_CIRCLES_MIN_ZOOM = 14.4;
 
 const CLIENT_RADIUS_METERS = 70;
 

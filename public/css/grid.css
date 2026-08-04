@@ -219,6 +219,10 @@
   white-space: nowrap;
 }
 
+.motion-label {
+  color: #d8d6d3;
+}
+
 /* =========================================================
    6. MOVIMIENTO
  ========================================================= */
@@ -277,7 +281,7 @@
   background: #54A1F7;
 }
 .seg.cliente {  
-  background: #22c55e;
+  background: #0c7934;
 }
 
 /* color y fuente de datos de pedidos */

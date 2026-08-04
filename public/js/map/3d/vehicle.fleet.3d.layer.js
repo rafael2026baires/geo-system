@@ -4,15 +4,17 @@ import { resolveZoomScaleFactor } from './map.3d.scale.js';
 import { MAIN_MAP_VEHICLE_SCALE_PROFILE } from './map.3d.scale.config.js';
 
 const LAYER_ID = 'vehicle-fleet-3d-layer';
-const MODEL_URL = './assets/models/3d/low_poly_truck_smooth_box_v1.glb';
-const VEHICLE_NORMAL_COLOR = '#D1D5DB';
-const VEHICLE_FOCUSED_COLOR = '#F59E0B';
-const ENABLE_MAIN_MAP_VEHICLE_HEMISPHERE_LIGHT_TEST = true;
+//const MODEL_URL = './assets/models/3d/isuzu_elf_2024_optimized_light_v2.glb';
+const MODEL_URL = './assets/models/3d/isuzu_elf_2024_map_textured_refined_wheels_v2.glb';
+
+const ENABLE_MAIN_MAP_VEHICLE_HEMISPHERE_LIGHT_TEST = false;
+const VEHICLE_FOCUS_EMISSIVE_COLOR = '#f59e0b';
+const VEHICLE_FOCUS_EMISSIVE_INTENSITY = 0.18;
 
 const VEHICLE_MODEL_LENGTH_METERS = 12;
 const VEHICLE_MODEL_ALTITUDE_METERS = 0;
 const VEHICLE_MODEL_ROTATION_X = Math.PI / 2;
-const VEHICLE_MODEL_ROTATION_Y = 0;
+const VEHICLE_MODEL_ROTATION_Y = Math.PI / 2;
 const VEHICLE_MODEL_ROTATION_Z = 0;
 const VEHICLE_MODEL_BEARING_OFFSET_DEG = 0;
 const MAP_BEARING_ALIGNMENT_DEG = -90;
@@ -37,12 +39,6 @@ function createBoxCornerPoints(box) {
 
 function normalizeUnitId(unitId) {
   return String(unitId);
-}
-
-function normalizeFocusedUnitId(unitId) {
-  return unitId === null || unitId === undefined
-    ? null
-    : normalizeUnitId(unitId);
 }
 
 function normalizePosition(position) {
@@ -106,60 +102,8 @@ function getBaseRotationMatrix() {
     .multiply(new THREE.Matrix4().makeRotationZ(VEHICLE_MODEL_ROTATION_Z));
 }
 
-function applyVehicleFocusColor(vehicle, focused) {
-  if (!vehicle) return false;
-
-  const targetColor = new THREE.Color(
-    focused ? VEHICLE_FOCUSED_COLOR : VEHICLE_NORMAL_COLOR
-  );
-  let changed = false;
-
-  vehicle.traverse(object => {
-    if (!object.isMesh || !object.material) return;
-
-    const applyMaterialColor = material => {
-      if (
-        (material.name !== 'body' && material.name !== 'cabin') ||
-        !material.color ||
-        material.color.equals(targetColor)
-      ) {
-        return;
-      }
-
-      material.color.copy(targetColor);
-      changed = true;
-    };
-
-    if (Array.isArray(object.material)) {
-      object.material.forEach(applyMaterialColor);
-    } else {
-      applyMaterialColor(object.material);
-    }
-  });
-
-  return changed;
-}
-
 function prepareVehicleModel(template) {
   const vehicle = template.clone(true);
-
-  vehicle.traverse(object => {
-    if (!object.isMesh || !object.material) return;
-
-    const repaintMaterial = material => {
-      if (material.name !== 'body' && material.name !== 'cabin') {
-        return material;
-      }
-
-      const clonedMaterial = material.clone();
-      clonedMaterial.color.set(VEHICLE_NORMAL_COLOR);
-      return clonedMaterial;
-    };
-
-    object.material = Array.isArray(object.material)
-      ? object.material.map(repaintMaterial)
-      : repaintMaterial(object.material);
-  });
 
   removeEmbeddedCamerasAndLights(vehicle);
   vehicle.updateMatrixWorld(true);
@@ -190,6 +134,68 @@ function prepareVehicleModel(template) {
   };
 }
 
+function createInstanceOwnedMaterials(vehicle) {
+  const clonesBySourceMaterial = new Map();
+  const focusMaterialStates = [];
+
+  vehicle.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+
+    const sourceMaterials = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
+    const instanceMaterials = sourceMaterials.map(sourceMaterial => {
+      if (!clonesBySourceMaterial.has(sourceMaterial)) {
+        const material = sourceMaterial.clone();
+        clonesBySourceMaterial.set(sourceMaterial, material);
+
+        if (
+          material.emissive?.isColor &&
+          Number.isFinite(material.emissiveIntensity)
+        ) {
+          focusMaterialStates.push({
+            material,
+            emissive: material.emissive.clone(),
+            emissiveIntensity: material.emissiveIntensity
+          });
+        }
+      }
+
+      return clonesBySourceMaterial.get(sourceMaterial);
+    });
+
+    object.material = Array.isArray(object.material)
+      ? instanceMaterials
+      : instanceMaterials[0];
+  });
+
+  return {
+    materials: [...clonesBySourceMaterial.values()],
+    focusMaterialStates
+  };
+}
+
+function setInstanceFocusVisual(instance, focused) {
+  instance.focusMaterialStates.forEach(materialState => {
+    if (focused) {
+      materialState.material.emissive.set(VEHICLE_FOCUS_EMISSIVE_COLOR);
+      materialState.material.emissiveIntensity =
+        VEHICLE_FOCUS_EMISSIVE_INTENSITY;
+      return;
+    }
+
+    materialState.material.emissive.copy(materialState.emissive);
+    materialState.material.emissiveIntensity =
+      materialState.emissiveIntensity;
+  });
+}
+
+function disposeInstanceMaterials(instance) {
+  instance.materials.forEach(material => material.dispose());
+  instance.materials = [];
+  instance.focusMaterialStates = [];
+}
+
 function updateMercatorPosition(instance) {
   if (!instance.position) {
     instance.mercatorCoordinate = null;
@@ -211,6 +217,8 @@ function createInstanceState(unitId) {
     bearingDeg: 0,
     visible: true,
     vehicle: null,
+    materials: [],
+    focusMaterialStates: [],
     boundsPoints: [],
     screenBounds: {
       left: 0,
@@ -227,13 +235,16 @@ function createInstanceVehicle(state, instance) {
 
   const prepared = prepareVehicleModel(state.template);
   instance.vehicle = prepared.vehicle;
+  const instanceMaterials = createInstanceOwnedMaterials(instance.vehicle);
+  instance.materials = instanceMaterials.materials;
+  instance.focusMaterialStates = instanceMaterials.focusMaterialStates;
   instance.boundsPoints = prepared.boundsPoints;
   instance.groundOffsetMeters = prepared.groundOffsetMeters;
-  instance.vehicle.visible = false;
-  applyVehicleFocusColor(
-    instance.vehicle,
-    instance.unitId === state.focusedUnitId
+  setInstanceFocusVisual(
+    instance,
+    state.focusedUnitId === instance.unitId
   );
+  instance.vehicle.visible = false;
   state.scene.add(instance.vehicle);
 }
 
@@ -461,6 +472,7 @@ function createLayer(state) {
       state.scene = null;
       state.renderer = null;
       state.instances.forEach(instance => {
+        disposeInstanceMaterials(instance);
         instance.vehicle = null;
         instance.boundsPoints = [];
         instance.groundOffsetMeters = VEHICLE_MODEL_ALTITUDE_METERS;
@@ -482,11 +494,11 @@ export function initVehicleFleet3DLayer(map, { onScreenBounds = null } = {}) {
   const state = {
     map,
     instances: new Map(),
+    focusedUnitId: null,
     template: null,
     camera: null,
     scene: null,
     renderer: null,
-    focusedUnitId: null,
     lifecycleVersion: 0,
     layer: null,
     addLayerWhenReady: null,
@@ -530,37 +542,6 @@ export function upsertVehicleFleet3DInstance(map, unitId, {
   map.triggerRepaint();
 }
 
-export function syncVehicleFleet3DFocus(
-  map,
-  focusedUnitId,
-  previousFocusedUnitId
-) {
-  const state = states.get(map);
-  if (!state) return;
-
-  const focusedKey = normalizeFocusedUnitId(focusedUnitId);
-  const previousKey = normalizeFocusedUnitId(previousFocusedUnitId);
-  state.focusedUnitId = focusedKey;
-
-  let changed = false;
-
-  if (previousKey && previousKey !== focusedKey) {
-    const previousInstance = state.instances.get(previousKey);
-    changed =
-      applyVehicleFocusColor(previousInstance?.vehicle, false) || changed;
-  }
-
-  if (focusedKey) {
-    const focusedInstance = state.instances.get(focusedKey);
-    changed =
-      applyVehicleFocusColor(focusedInstance?.vehicle, true) || changed;
-  }
-
-  if (changed) {
-    map.triggerRepaint();
-  }
-}
-
 export function setVehicleFleet3DPosition(map, unitId, position) {
   const state = states.get(map);
   if (!state) return;
@@ -589,6 +570,29 @@ export function setVehicleFleet3DVisible(map, unitId, visible) {
   map.triggerRepaint();
 }
 
+export function setVehicleFleet3DFocused(map, unitId) {
+  const state = states.get(map);
+  if (!state) return;
+
+  const focusedUnitId = unitId === null || unitId === undefined
+    ? null
+    : normalizeUnitId(unitId);
+  const previousInstance = state.instances.get(state.focusedUnitId);
+
+  if (previousInstance) {
+    setInstanceFocusVisual(previousInstance, false);
+  }
+
+  state.focusedUnitId = focusedUnitId;
+
+  const focusedInstance = state.instances.get(focusedUnitId);
+  if (focusedInstance) {
+    setInstanceFocusVisual(focusedInstance, true);
+  }
+
+  map.triggerRepaint();
+}
+
 export function removeVehicleFleet3DInstance(map, unitId) {
   const state = states.get(map);
   if (!state) return;
@@ -598,6 +602,7 @@ export function removeVehicleFleet3DInstance(map, unitId) {
   if (!instance) return;
 
   instance.vehicle?.removeFromParent();
+  disposeInstanceMaterials(instance);
   instance.vehicle = null;
   instance.boundsPoints = [];
   state.instances.delete(normalizedUnitId);
@@ -610,6 +615,7 @@ export function clearVehicleFleet3DLayer(map) {
 
   state.instances.forEach(instance => {
     instance.vehicle?.removeFromParent();
+    disposeInstanceMaterials(instance);
     instance.vehicle = null;
     instance.boundsPoints = [];
   });

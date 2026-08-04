@@ -84,7 +84,7 @@ export function buildFocusedVehicleCompactModel(context) {
   return {
     primaryText: formatVehicleMinimal(context),
     secondaryText: secondaryParts.length > 0
-      ? secondaryParts.join(' · ')
+      ? secondaryParts.join('\n')
       : null
   };
 }

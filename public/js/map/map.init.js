@@ -5,6 +5,11 @@ import {
   createMapPane,
   createBaseCircle
 } from './map.adapter.js';
+import {
+  FLOATING_MAP_LOGISTICS_BASE_SCALE_PROFILE,
+  MAIN_MAP_LOGISTICS_BASE_SCALE_PROFILE
+} from './3d/map.3d.scale.config.js';
+import { initLogisticsBase3DLayer } from './3d/logistics.base.3d.layer.js';
 
 export function initMap(containerId, defaultLat, defaultLng, baseRadiusM) {    
     
@@ -30,7 +35,31 @@ export function initMap(containerId, defaultLat, defaultLng, baseRadiusM) {
     // en styles.css .zoom-debug {.....
     */
     // -----------------------------------------------------------------------    
-    createBaseCircle(map, defaultLat, defaultLng, baseRadiusM); 
+    const logisticsBaseScaleProfile = containerId === 'map'
+      ? MAIN_MAP_LOGISTICS_BASE_SCALE_PROFILE
+      : containerId === 'floating-map'
+        ? FLOATING_MAP_LOGISTICS_BASE_SCALE_PROFILE
+        : null;
+    const logisticsBaseLayerId = containerId === 'map'
+      ? 'map-logistics-base-3d'
+      : containerId === 'floating-map'
+        ? 'floating-map-logistics-base-3d'
+        : null;
+
+    if (logisticsBaseScaleProfile && logisticsBaseLayerId) {
+      initLogisticsBase3DLayer(map, {
+        id: logisticsBaseLayerId,
+        position: {
+          lat: defaultLat,
+          lng: defaultLng
+        },
+        zoomScaleProfile: logisticsBaseScaleProfile
+      });
+    }
+
+    createBaseCircle(map, defaultLat, defaultLng, baseRadiusM, {
+      beforeLayerId: logisticsBaseLayerId
+    });
   
     const replayLayer = createLayerGroup(map);
     const realtimeLayer = createLayerGroup(map);

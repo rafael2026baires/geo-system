@@ -143,6 +143,34 @@
 .kpi-block-grafico1 .kpi-title,
 .kpi-block-grafico2 .kpi-title {
   flex: 0 0 auto;
+  position: relative;
+}
+
+.operational-context-pulley {
+  position: absolute;
+  top: 40%;
+  right: 8px;
+  width: 17px;
+  height: 17px;
+  background-image: url('../assets/images/icons/animation_activity_w.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.8;
+  transform: translateY(-50%);
+}
+
+.operational-context-pulley.is-rotating {
+  animation: operational-context-pulley-rotation 12s linear infinite;
+}
+
+@keyframes operational-context-pulley-rotation {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 
 .kpi-block-grafico1 .street-rhythm-chart-wrap,
@@ -247,7 +275,8 @@
   font-size: 16px;
   line-height: 18px;
   font-weight: bold;
-  color: var(--kpi-title-color);
+  /*color: var(--kpi-title-color);*/
+  color: #d1d1d1;
 }
 
 .kpi-group-fleet {
@@ -315,7 +344,8 @@
   /*font-style: italic;*/
   line-height: 14px; 
   font-weight: bold;
-  color: var(--kpi-title-color);
+  /*color: var(--kpi-title-color);*/
+  color: #d1d1d1;
 }
 
 /* =========================================================
@@ -512,7 +542,7 @@
 .kpi-block-activity .kpi-title,
 .kpi-block-location .kpi-title {
   display: flex;
-  flex-direction: row;
+  flex-direction: row;  
   align-items: center;
   justify-content: center;
   text-align: center;

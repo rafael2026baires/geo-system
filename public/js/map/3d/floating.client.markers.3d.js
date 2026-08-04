@@ -48,13 +48,10 @@ export function initFloatingClientMarkers3D(map) {
     if (state?.layer !== layer) return;
     if ((!map.loaded() && !map.isStyleLoaded()) || map.getLayer(layer.id)) return;
 
-    const haloLayerId = 'geo-vehicle-symbol-halo-layer';
-    const symbolLayerId = 'geo-vehicle-symbol-layer';
-    const beforeId = map.getLayer(haloLayerId)
-      ? haloLayerId
-      : map.getLayer(symbolLayerId)
-        ? symbolLayerId
-        : undefined;
+    const vehicleLayerId = 'floating-vehicle-marker-3d-layer';
+    const beforeId = map.getLayer(vehicleLayerId)
+      ? vehicleLayerId
+      : undefined;
 
     if (beforeId) {
       map.addLayer(layer, beforeId);

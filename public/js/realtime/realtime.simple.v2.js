@@ -14,7 +14,7 @@ import { updateMap3DClients } from '../map/3d/map.3d.lab.js';
 import {
   initVehicleFleet3DLayer,
   destroyVehicleFleet3DLayer,
-  syncVehicleFleet3DFocus
+  setVehicleFleet3DFocused
 } from '../map/3d/vehicle.fleet.3d.layer.js';
 import {
   initVehicleInfoLabels,
@@ -49,6 +49,7 @@ export function runRealtimeV2({ map, layer, url }) {
           updateVehicleInfoLabelScreenBounds(map, boundsByUnitId);
         }
       });
+      setVehicleFleet3DFocused(map, getFocusedUnitId());
     }
     initLocationInfoLabels(map);
     
@@ -75,12 +76,11 @@ export function runRealtimeV2({ map, layer, url }) {
       );
     }
 
-    const unsubscribeFocusedUnit = subscribeFocusedUnit((
-      focusedUnitId,
-      previousFocusedUnitId
-    ) => {
+    const unsubscribeFocusedUnit = subscribeFocusedUnit(focusedUnitId => {
       refreshFocusedInfo(focusedUnitId);
-      syncVehicleFleet3DFocus(map, focusedUnitId, previousFocusedUnitId);
+      if (ENABLE_MAIN_MAP_VEHICLE_FLEET_3D) {
+        setVehicleFleet3DFocused(map, focusedUnitId);
+      }
     });
 
     const handleMapZoomEnd = () => {

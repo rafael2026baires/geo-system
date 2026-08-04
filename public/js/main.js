@@ -26,9 +26,11 @@ import { initMapStyleUI } from './map/map.style.ui.js';
 import { initMapLabelsUI } from './map/map.labels.ui.js';
 import { runMap360Demo } from './map/map.demo.rotation.js';
 import { initMap3DLab } from './map/3d/map.3d.lab.js';
+import { SHOW_MAP_CALIBRATION_UI } from './map/map.calibration.ui.config.js';
 
 let TENANT_ID = null;
 let realtimeInstance = null;
+const ENABLE_3D_SCALE_CALIBRATOR = true;
 
 // TELEMETRÍA / OBD OCULTA TEMPORALMENTE - V1 COMERCIAL
 /*
@@ -73,26 +75,28 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
     const { map, replayLayer, realtimeLayer } = initMap('map', defaultLat, defaultLng, baseRadiusM); //initMap(defaultLat, defaultLng, baseRadiusM);
     window.mainMap = map;
 
-    const zoomCalibrationIndicator = document.createElement('div');
-    zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
-    zoomCalibrationIndicator.style.cssText = [
-      'position:absolute',
-      'left:10px',
-      'bottom:10px',
-      'z-index:10',
-      'padding:4px 8px',
-      'border-radius:4px',
-      'background:rgba(17,24,39,.85)',
-      'color:#fff',
-      'font:12px/1.4 monospace',
-      'pointer-events:none'
-    ].join(';');
-    const updateZoomCalibrationIndicator = () => {
-      zoomCalibrationIndicator.textContent = `Zoom: ${map.getZoom().toFixed(1)}`;
-    };
-    map.getContainer().appendChild(zoomCalibrationIndicator);
-    map.on('zoomend', updateZoomCalibrationIndicator);
-    updateZoomCalibrationIndicator();
+    if (SHOW_MAP_CALIBRATION_UI) {
+      const zoomCalibrationIndicator = document.createElement('div');
+      zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
+      zoomCalibrationIndicator.style.cssText = [
+        'position:absolute',
+        'left:10px',
+        'bottom:10px',
+        'z-index:10',
+        'padding:4px 8px',
+        'border-radius:4px',
+        'background:rgba(17,24,39,.85)',
+        'color:#fff',
+        'font:12px/1.4 monospace',
+        'pointer-events:none'
+      ].join(';');
+      const updateZoomCalibrationIndicator = () => {
+        zoomCalibrationIndicator.textContent = `Zoom: ${map.getZoom().toFixed(1)}`;
+      };
+      map.getContainer().appendChild(zoomCalibrationIndicator);
+      map.on('zoomend', updateZoomCalibrationIndicator);
+      updateZoomCalibrationIndicator();
+    }
 
     initMapCameraUI(map);
     initMapStyleUI(map);
@@ -115,7 +119,19 @@ function initApp(defaultLat, defaultLng, baseRadiusM) {
     }
     // ----------------------------------------------------------------
 
-    initFloatingMap(defaultLat, defaultLng, baseRadiusM);
+    const floatingMap = initFloatingMap(defaultLat, defaultLng, baseRadiusM);
+    if (SHOW_MAP_CALIBRATION_UI && ENABLE_3D_SCALE_CALIBRATOR) {
+      import('./map/3d/map.3d.calibrator.js')
+        .then(({ initMap3DCalibrator }) => {
+          initMap3DCalibrator({
+            mainMap: map,
+            floatingMap
+          });
+        })
+        .catch(error => {
+          console.error('[MAP-3D-CALIBRATOR]', error);
+        });
+    }
     enableFloatingDrag();
     enableFloatingResize();
     enableFloatingClose();

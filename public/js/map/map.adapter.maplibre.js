@@ -14,6 +14,9 @@ export function createLeafletMap(containerId, defaultLat, defaultLng) {
     pitch: 55,
     maxPitch: 80,
     bearing: -18,
+    attributionControl: {
+      compact: false
+    },
     canvasContextAttributes: {
       antialias: true
     },
@@ -199,7 +202,7 @@ export function createBoundsFromUnits(units) {
   );
 }
 
-export function createBaseCircle(map, defaultLat, defaultLng, baseRadiusM) {
+export function createBaseCircle(map, defaultLat, defaultLng, baseRadiusM, options = {}) {
   return createMapCircle(
     map,
     { lat: defaultLat, lng: defaultLng },
@@ -211,9 +214,10 @@ export function createBaseCircle(map, defaultLat, defaultLng, baseRadiusM) {
       fillColor: getComputedStyle(document.documentElement)
         .getPropertyValue('--map-base-circle-fill-color')
         .trim() || '#00e5ff',
-      fillOpacity: 0.7,
-      opacity: 0.9,
-      weight: 2
+      fillOpacity: 0.2,
+      opacity: 0.4,
+      weight: 2,
+      beforeLayerId: options.beforeLayerId
     }
   );
 }
@@ -261,7 +265,7 @@ export function createMapCircle(layer, position, options = {}) {
       data: feature
     });
 
-    map.addLayer({
+    const fillLayerDefinition = {
       id: fillLayerId,
       type: 'fill',
       source: sourceId,
@@ -269,9 +273,9 @@ export function createMapCircle(layer, position, options = {}) {
         'fill-color': options.fillColor || options.color || '#00e5ff',
         'fill-opacity': options.fillOpacity ?? 0.12
       }
-    });
+    };
 
-    map.addLayer({
+    const lineLayerDefinition = {
       id: lineLayerId,
       type: 'line',
       source: sourceId,
@@ -280,7 +284,21 @@ export function createMapCircle(layer, position, options = {}) {
         'line-width': options.weight || 1,
         'line-opacity': options.opacity ?? 0.7
       }
-    });
+    };
+
+    const beforeLayerId =
+      options.beforeLayerId && map.getLayer(options.beforeLayerId)
+        ? options.beforeLayerId
+        : null;
+
+    if (beforeLayerId) {
+      map.addLayer(fillLayerDefinition, beforeLayerId);
+      map.addLayer(lineLayerDefinition, beforeLayerId);
+      return;
+    }
+
+    map.addLayer(fillLayerDefinition);
+    map.addLayer(lineLayerDefinition);
   }
 
   const item = {

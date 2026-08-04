@@ -6,14 +6,16 @@ import {
 } from './map.3d.scale.config.js';
 
 const LAYER_ID = 'floating-vehicle-marker-3d-layer';
-const MODEL_URL = './assets/models/3d/low_poly_truck_smooth_box_v1.glb';
+//const MODEL_URL = './assets/models/3d/isuzu_elf_2024_optimized_light_v2.glb';
+const MODEL_URL = './assets/models/3d/isuzu_elf_2024_map_textured_refined_wheels_v2.glb';
+
 const PRIMARY_BEFORE_LAYER_ID = 'geo-vehicle-symbol-halo-layer';
 const SECONDARY_BEFORE_LAYER_ID = 'geo-vehicle-symbol-layer';
 
 const VEHICLE_MODEL_LENGTH_METERS = 12;
 const VEHICLE_MODEL_ALTITUDE_METERS = 0;
 const VEHICLE_MODEL_ROTATION_X = Math.PI / 2;
-const VEHICLE_MODEL_ROTATION_Y = 0;
+const VEHICLE_MODEL_ROTATION_Y = Math.PI / 2;;
 const VEHICLE_MODEL_ROTATION_Z = 0;
 const VEHICLE_MODEL_BEARING_OFFSET_DEG = 0;
 const MAP_BEARING_ALIGNMENT_DEG = -90;

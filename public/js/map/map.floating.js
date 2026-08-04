@@ -1,5 +1,6 @@
 import { stopFollow } from './map.camera.control.js';
 import { initMap } from './map.init.js';
+import { SHOW_MAP_CALIBRATION_UI } from './map.calibration.ui.config.js';
 import {
   initFloatingClientMarkers3D,
   updateFloatingClientMarkers3D,
@@ -455,33 +456,35 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
     
     floatingMap = res.map;
 
-    const zoomCalibrationIndicator = document.createElement('div');
-    zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
-    zoomCalibrationIndicator.style.cssText = [
-      'position:absolute',
-      'left:10px',
-      'bottom:10px',
-      'z-index:10',
-      'padding:4px 8px',
-      'border-radius:4px',
-      'background:rgba(17,24,39,.85)',
-      'color:#fff',
-      'font:12px/1.4 monospace',
-      'pointer-events:none'
-    ].join(';');
-    const updateZoomCalibrationIndicator = () => {
-      zoomCalibrationIndicator.textContent =
-        `Zoom: ${getMapZoom(floatingMap).toFixed(1)}`;
-    };
-    floatingMap.getContainer().appendChild(zoomCalibrationIndicator);
-    floatingMap.on('zoom', updateZoomCalibrationIndicator);
-    updateZoomCalibrationIndicator();
+    if (SHOW_MAP_CALIBRATION_UI) {
+      const zoomCalibrationIndicator = document.createElement('div');
+      zoomCalibrationIndicator.dataset.temporaryZoomCalibration = 'true';
+      zoomCalibrationIndicator.style.cssText = [
+        'position:absolute',
+        'left:10px',
+        'bottom:10px',
+        'z-index:10',
+        'padding:4px 8px',
+        'border-radius:4px',
+        'background:rgba(17,24,39,.85)',
+        'color:#fff',
+        'font:12px/1.4 monospace',
+        'pointer-events:none'
+      ].join(';');
+      const updateZoomCalibrationIndicator = () => {
+        zoomCalibrationIndicator.textContent =
+          `Zoom: ${getMapZoom(floatingMap).toFixed(1)}`;
+      };
+      floatingMap.getContainer().appendChild(zoomCalibrationIndicator);
+      floatingMap.on('zoom', updateZoomCalibrationIndicator);
+      updateZoomCalibrationIndicator();
+    }
 
     initFloatingFocusInfoLabels(floatingMap, {
       vehicleContainer: document.getElementById('floating-label')
     });
     initFloatingVehicle3D(floatingMap);
-    if (ENABLE_FLOATING_VEHICLE_3D_CALIBRATOR) {
+    if (SHOW_MAP_CALIBRATION_UI && ENABLE_FLOATING_VEHICLE_3D_CALIBRATOR) {
       //initFloatingVehicle3DCalibrator(floatingMap);
     }
     initFloatingClientMarkers3D(floatingMap);
@@ -497,7 +500,9 @@ export function initFloatingMap(defaultLat, defaultLng, baseRadiusM) {
       if (ENABLE_FLOATING_VEHICLE_2D && floatingMarker) {
         updateVehicleMarkerVisualByZoom(floatingMarker, getMapZoom(floatingMap));
       }
-    });  
+    });
+
+    return floatingMap;
 }
 
 export function openFloating(unitId) {

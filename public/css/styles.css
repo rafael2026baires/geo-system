@@ -169,15 +169,28 @@ header button:hover {
 
 #focus-resizer {
   height: 6px;  
-  background: var(--layout-resizer-bg);
+  position: relative;
+  background: #111827;
   cursor: ns-resize;
   flex: 0 0 6px;  
-  border-top: 1px solid var(--focus-panel-border-color);  
-  border-bottom: 1px solid var(--focus-panel-border-color);
+  border-top: 1px solid #111827;  
+  border-bottom: 1px solid #111827;
+}
+
+#focus-resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: #4B5563;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 #focus-resizer:hover {  
-  background: var(--layout-resizer-hover-bg);
+  background: #1F2937;
 }
 
 #focus-panel {
@@ -188,7 +201,7 @@ header button:hover {
   overflow: hidden;
   overflow: visible;
   flex: 0 0 auto;  
-  border-top: 1px solid var(--focus-panel-border-color);
+  border-top: 1px solid #111827;
   position: relative;
 }
 
