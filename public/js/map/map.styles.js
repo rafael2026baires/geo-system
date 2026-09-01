@@ -47,6 +47,13 @@ export const MAP_STYLE_OPENFREEMAP_LIBERTY = {
   maplibreStyleUrl: 'https://tiles.openfreemap.org/styles/liberty'
 };
 
+export function addCartoApiKey(tileUrl) {
+  const apiKey = window.AppConfig?.cartoBasemapApiKey?.trim();
+  return apiKey
+    ? `${tileUrl}?key=${encodeURIComponent(apiKey)}`
+    : tileUrl;
+}
+
 // Estilo activo actual
 //export const ACTIVE_MAP_STYLE = MAP_STYLE_CARTO_DARK;
 export const MAP_STYLES = [

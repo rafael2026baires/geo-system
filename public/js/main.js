@@ -48,7 +48,8 @@ fetch('/session_info.php')
   .then(async cfg => {
       TENANT_ID = cfg.tenant_id;
       window.AppConfig = {
-        usesObd: Number(cfg.uses_obd) === 1
+        usesObd: Number(cfg.uses_obd) === 1,
+        cartoBasemapApiKey: cfg.carto_basemap_api_key || ''
       };
 
       if (typeof window.loadUiTheme === 'function') {

@@ -20,6 +20,7 @@ $default_lat = null;
 $default_lng = null;
 $base_radius_m = null;
 $uses_obd = 0;
+$carto_basemap_api_key = getenv_config('CARTO_BASEMAP_API_KEY');
 
 // buscar coords del tenant
 if ($tenant_id) {    
@@ -49,5 +50,6 @@ echo json_encode([
     'default_lat' => $default_lat,
     'default_lng' => $default_lng,
     'base_radius_m' => $base_radius_m,
-    'uses_obd' => $uses_obd
+    'uses_obd' => $uses_obd,
+    'carto_basemap_api_key' => $carto_basemap_api_key
 ]);

@@ -2,7 +2,7 @@
 // Adapter MapLibre para GEO-SYSTEM / TwyBox
 // Todavía NO activar desde map.adapter.js.
 
-import { ACTIVE_MAP_STYLE } from './map.styles.js';
+import { ACTIVE_MAP_STYLE, addCartoApiKey } from './map.styles.js';
 import { applyMapStyleOverrides } from './map.style.overrides.js';
 import { installMissingIconHandler } from './map.style.missing-icons.js';
 
@@ -75,7 +75,7 @@ function getMapLibreStyle() {
     sources: {
       basemap: {
         type: 'raster',
-        tiles: ACTIVE_MAP_STYLE.maplibreTiles,
+        tiles: ACTIVE_MAP_STYLE.maplibreTiles.map(addCartoApiKey),
         tileSize: 256,
         attribution: ACTIVE_MAP_STYLE.attribution
       }
