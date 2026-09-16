@@ -31,12 +31,23 @@ header {
   align-items: center;
 }
 
-.titulo h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: bold;  
-  color: var(--layout-header-title-color);
-  font-family: "Arial Black", Arial, sans-serif;
+.titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titulo img {
+  display: block;
+  height: auto;
+}
+
+.titulo-isotipo {
+  width: 27px;
+}
+
+.titulo-logotipo {
+  width: 81px;
 }
 
 

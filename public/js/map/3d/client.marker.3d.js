@@ -55,13 +55,13 @@ function removeEmbeddedCamerasAndLights(root) {
 function getClientStatusColor(status) {
   switch (Number(status)) {
     case 20:
-      return '#725959';
+      return '#7563E8';
     case 30:
-      return '#5891d1';
+      return '#4FA3E3';
     case 40:
       return '#3cca70';
     default:
-      return '#725959';
+      return '#7563E8';
   }
 }
 
