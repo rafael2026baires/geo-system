@@ -25,23 +25,7 @@ try {
         throw new RuntimeException('No se pudo generar un identificador único.');
     }
 
-    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    $checkCode = $pdo->prepare('SELECT id FROM device_activations WHERE activation_code = ? LIMIT 1');
-    for ($attempt = 0; $attempt < 10; $attempt++) {
-        $random = random_bytes(10);
-        $suffix = '';
-        for ($i = 0; $i < 10; $i++) {
-            $suffix .= $alphabet[ord($random[$i]) & 31];
-        }
-        $activationCode = 'TVX-' . $suffix;
-        $checkCode->execute([$activationCode]);
-        if (!$checkCode->fetchColumn()) {
-            break;
-        }
-    }
-    if ($attempt === 10) {
-        throw new RuntimeException('No se pudo generar un código único.');
-    }
+    $activationCode = driver_generate_activation_code($pdo);
 
     $expiresAt = (new DateTimeImmutable('now'))->modify('+7 days')->format('Y-m-d H:i:s');
 
