@@ -8,6 +8,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 $tenantId = driver_session_tenant_id();
+driver_require_permission('driver.activacion.regenerar');
 $input = json_decode(file_get_contents('php://input'));
 
 if (!is_object($input)
@@ -43,6 +44,17 @@ try {
         driver_error(403, 'DEVICE_DISABLED', 'El dispositivo está deshabilitado.');
     }
 
+    $targetQuery = $pdo->prepare(
+        'SELECT vehicle_id FROM device_activations WHERE device_id = ?
+         ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
+    );
+    $targetQuery->execute([$deviceId]);
+    $vehicleId = (int)$targetQuery->fetchColumn();
+    if ($vehicleId <= 0 || !driver_find_enabled_vehicle($pdo, $vehicleId, $tenantId)) {
+        $pdo->rollBack();
+        driver_error(409, 'ACTIVATION_CONFLICT', 'La activación no tiene un vehículo objetivo válido.');
+    }
+
     $expirePrevious = $pdo->prepare(
         "UPDATE device_activations SET status = 'EXPIRED'
          WHERE device_id = ? AND status = 'PENDING'"
@@ -54,10 +66,10 @@ try {
 
     $insertActivation = $pdo->prepare(
         'INSERT INTO device_activations
-         (device_id, activation_code, status, expires_at, sent_at, used_at)
-         VALUES (?, ?, ?, ?, NULL, NULL)'
+         (device_id, vehicle_id, activation_code, status, expires_at, sent_at, used_at)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL)'
     );
-    $insertActivation->execute([$deviceId, $activationCode, 'PENDING', $expiresAt]);
+    $insertActivation->execute([$deviceId, $vehicleId, $activationCode, 'PENDING', $expiresAt]);
     $activationId = (int)$pdo->lastInsertId();
 
     $pdo->commit();
@@ -67,6 +79,7 @@ try {
         'data' => [
             'device_id' => $deviceId,
             'device_uuid' => $device['device_uuid'],
+            'vehicle_id' => $vehicleId,
             'activation_id' => $activationId,
             'activation_code' => $activationCode,
             'activation_status' => 'PENDING',

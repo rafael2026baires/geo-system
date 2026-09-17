@@ -25,6 +25,7 @@ if (!is_object($input)
 
 $deviceId = $input->device_id;
 $enabled = $input->enabled;
+driver_require_permission($enabled ? 'driver.device.habilitar' : 'driver.device.deshabilitar');
 
 try {
     $pdo->beginTransaction();

@@ -13,7 +13,7 @@ try {
     }
 
     $stmt = $pdo->prepare("
-        SELECT id, name, phone
+        SELECT id, name, dni, phone, email, notes
         FROM drivers
         WHERE tenant_id = ?
         AND active = 1

@@ -16,6 +16,9 @@ try {
     $name     = $input['name'] ?? null;
     $dni    = $input['dni'] ?? null;
     $phone    = $input['phone'] ?? null;
+    $emailProvided = is_array($input) && array_key_exists('email', $input);
+    $email    = isset($input['email']) && is_string($input['email']) && trim($input['email']) !== ''
+        ? trim($input['email']) : null;
     $notes    = $input['notes'] ?? null;
 
     session_start();
@@ -40,6 +43,7 @@ try {
             name = ?,
             dni = ?,
             phone = ?,
+            email = IF(?, ?, email),
             notes = ?
         WHERE id = ?
         AND tenant_id = ?
@@ -49,6 +53,8 @@ try {
         $name,
         $dni,
         $phone,
+        $emailProvided ? 1 : 0,
+        $email,
         $notes,
         $id,
         $tenantId
@@ -67,4 +73,3 @@ try {
         'detalle' => $e->getMessage()
     ]);
 }
-

@@ -8,6 +8,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 $tenantId = driver_session_tenant_id();
+driver_require_permission('driver.activacion.enviar');
 $input = json_decode(file_get_contents('php://input'));
 
 if (!is_object($input)

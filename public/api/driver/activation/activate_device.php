@@ -38,8 +38,8 @@ try {
     $pdo->beginTransaction();
 
     $select = $pdo->prepare(
-        'SELECT a.id, a.status, (a.expires_at <= NOW()) AS expired,
-                d.id AS device_id, d.device_uuid, d.active
+        'SELECT a.id, a.vehicle_id, a.status, (a.expires_at <= NOW()) AS expired,
+                d.id AS device_id, d.device_uuid, d.active, d.tenant_id
          FROM device_activations a
          INNER JOIN devices d ON d.id = a.device_id
          WHERE a.activation_code = ?
@@ -64,6 +64,16 @@ try {
     }
 
     if ($activation['status'] === 'USED') {
+        $usedLinks = $pdo->prepare(
+            'SELECT vehicle_id FROM vehicle_devices WHERE device_id = ? FOR UPDATE'
+        );
+        $usedLinks->execute([$activation['device_id']]);
+        $linkedVehicleIds = $usedLinks->fetchAll(PDO::FETCH_COLUMN);
+        if (count($linkedVehicleIds) !== 1
+            || (int)$linkedVehicleIds[0] !== (int)$activation['vehicle_id']) {
+            $pdo->rollBack();
+            driver_error(409, 'ACTIVATION_CONFLICT', 'La activación no tiene el vínculo esperado.');
+        }
         $pdo->commit();
         driver_response(200, [
             'success' => true,
@@ -86,12 +96,41 @@ try {
         driver_error(410, 'ACTIVATION_EXPIRED', 'La activación está vencida.');
     }
 
+    $vehicleId = (int)$activation['vehicle_id'];
+    $deviceId = (int)$activation['device_id'];
+    if ($vehicleId <= 0 || $deviceId > 2147483647
+        || !driver_find_enabled_vehicle($pdo, $vehicleId, (int)$activation['tenant_id'])) {
+        $pdo->rollBack();
+        driver_error(409, 'ACTIVATION_CONFLICT', 'El vehículo de la activación no está disponible.');
+    }
+
+    $links = $pdo->prepare(
+        'SELECT vehicle_id, device_id FROM vehicle_devices
+         WHERE vehicle_id = ? OR device_id = ? FOR UPDATE'
+    );
+    $links->execute([$vehicleId, $deviceId]);
+    $exactLink = false;
+    foreach ($links->fetchAll(PDO::FETCH_ASSOC) as $link) {
+        if ((int)$link['vehicle_id'] !== $vehicleId || (int)$link['device_id'] !== $deviceId) {
+            $pdo->rollBack();
+            driver_error(409, 'ACTIVATION_CONFLICT', 'El vehículo o dispositivo ya tiene otra asociación.');
+        }
+        $exactLink = true;
+    }
+
     $updateDevice = $pdo->prepare(
         'UPDATE devices SET brand = ?, model = ?, app_version = ? WHERE id = ?'
     );
     $updateDevice->execute([
         $input->brand, $input->model, $input->app_version, $activation['device_id']
     ]);
+
+    if (!$exactLink) {
+        $insertLink = $pdo->prepare(
+            'INSERT INTO vehicle_devices (vehicle_id, device_id) VALUES (?, ?)'
+        );
+        $insertLink->execute([$vehicleId, $deviceId]);
+    }
 
     $useActivation = $pdo->prepare(
         "UPDATE device_activations SET status = 'USED', used_at = NOW() WHERE id = ?"

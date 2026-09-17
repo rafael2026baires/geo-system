@@ -8,6 +8,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 }
 
 $tenantId = driver_session_tenant_id();
+driver_require_permission('driver.activacion.ver');
 
 if (count($_GET) !== 1 || !array_key_exists('device_id', $_GET)) {
     driver_error(400, 'INVALID_REQUEST', 'Se requiere únicamente device_id.');
@@ -36,7 +37,7 @@ try {
     }
 
     $activationQuery = $pdo->prepare(
-        'SELECT id, activation_code, status, expires_at, sent_at, used_at,
+        'SELECT id, vehicle_id, activation_code, status, created_at, expires_at, sent_at, used_at,
                 (expires_at <= NOW()) AS expired
          FROM device_activations
          WHERE device_id = ?
@@ -69,14 +70,44 @@ try {
 
         $activation = [
             'activation_id' => (int)$row['id'],
+            'vehicle_id' => (int)$row['vehicle_id'],
             'activation_code' => $row['activation_code'],
             'status' => $status,
             'administrative_status' => $administrativeStatus,
+            'created_at' => $row['created_at'],
             'expires_at' => $row['expires_at'],
             'sent_at' => $row['sent_at'],
             'used_at' => $row['used_at']
         ];
     }
+
+    $targetVehicle = null;
+    if ($row) {
+        $targetQuery = $pdo->prepare(
+            'SELECT id, patent, brand, model FROM vehicles WHERE id = ? AND tenant_id = ? LIMIT 1'
+        );
+        $targetQuery->execute([$row['vehicle_id'], $tenantId]);
+        $targetVehicle = $targetQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($targetVehicle) {
+            $targetVehicle['id'] = (int)$targetVehicle['id'];
+        }
+    }
+
+    $vehicleQuery = $pdo->prepare(
+        'SELECT v.id, v.patent FROM vehicle_devices vd
+         INNER JOIN vehicles v ON v.id = vd.vehicle_id
+         WHERE vd.device_id = ? AND v.tenant_id = ? LIMIT 1'
+    );
+    $vehicleQuery->execute([$deviceId, $tenantId]);
+    $vehicle = $vehicleQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+
+    $driverQuery = $pdo->prepare(
+        'SELECT dr.id, dr.name FROM policy_driver_device p
+         INNER JOIN drivers dr ON dr.id = p.driver_id
+         WHERE p.device_id = ? AND p.tenant_id = ? AND dr.tenant_id = ? LIMIT 1'
+    );
+    $driverQuery->execute([$deviceId, $tenantId, $tenantId]);
+    $driver = $driverQuery->fetch(PDO::FETCH_ASSOC) ?: null;
 
     driver_response(200, [
         'success' => true,
@@ -88,6 +119,9 @@ try {
             'model' => $device['model'],
             'app_version' => $device['app_version'],
             'activation' => $activation,
+            'target_vehicle' => $targetVehicle,
+            'effective_vehicle' => $vehicle,
+            'associations' => ['vehicle' => $vehicle, 'driver' => $driver],
             'administrative_status' => $administrativeStatus
         ]
     ]);

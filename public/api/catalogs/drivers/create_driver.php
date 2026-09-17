@@ -15,6 +15,8 @@ try {
     $name     = $input['name'] ?? null;
     $dni    = $input['dni'] ?? null;
     $phone    = $input['phone'] ?? null;
+    $email    = isset($input['email']) && is_string($input['email']) && trim($input['email']) !== ''
+        ? trim($input['email']) : null;
     $notes    = $input['notes'] ?? null;
 
     session_start();
@@ -34,8 +36,8 @@ try {
     
     $stmt = $pdo->prepare("
         INSERT INTO drivers
-        (tenant_id, name, dni, phone, notes)
-        VALUES (?, ?, ?, ?, ?)
+        (tenant_id, name, dni, phone, email, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
@@ -43,6 +45,7 @@ try {
         $name,
         $dni,
         $phone,
+        $email,
         $notes
     ]);
 
