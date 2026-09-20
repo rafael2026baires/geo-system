@@ -21,9 +21,8 @@ return [
         'direcciones' => ['label' => 'Direcciones', 'description' => 'Puntos de origen y destino.', 'file' => 'comercial/direcciones.php', 'permission' => 'direcciones.ver'],
     ]],
     'driver' => ['label' => 'Driver / Activación', 'icon' => '⌁', 'pages' => [
-        'devices' => ['label' => 'Listado de devices', 'description' => 'Dispositivos de TwyVox Driver.', 'file' => 'driver/devices.php', 'permission' => 'driver.devices.ver'],
-        'nueva_activacion' => ['label' => 'Nueva activación', 'description' => 'Inicio del flujo de activación.', 'file' => 'driver/nueva_activacion.php', 'permission' => 'driver.activacion.crear'],
-        'gestion_activacion' => ['label' => 'Detalle y gestión', 'description' => 'Consulta y gestión de una activación.', 'file' => 'driver/gestion_activacion.php', 'permission' => 'driver.activacion.ver'],
+        'devices' => ['label' => 'Dispositivos', 'description' => 'Equipos vinculados a TwyVox Driver y su estado de activación.', 'file' => 'driver/devices.php', 'permission' => 'driver.devices.ver'],
+        'gestion_activacion' => ['label' => 'Dispositivo', 'description' => 'Estado y acciones del dispositivo seleccionado.', 'file' => 'driver/gestion_activacion.php', 'permission' => 'driver.activacion.ver'],
     ]],
     'configuracion' => ['label' => 'Configuración', 'icon' => '⚙', 'pages' => [
         'base_operativa' => ['label' => 'Base operativa', 'description' => 'Datos generales de la base operativa.', 'file' => 'configuracion/base_operativa.php', 'permission' => 'configuracion.base.ver'],

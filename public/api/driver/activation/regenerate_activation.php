@@ -45,11 +45,21 @@ try {
     }
 
     $targetQuery = $pdo->prepare(
-        'SELECT vehicle_id FROM device_activations WHERE device_id = ?
+        'SELECT id, vehicle_id, driver_id, status, (expires_at <= NOW()) AS expired
+         FROM device_activations WHERE device_id = ?
          ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
     );
     $targetQuery->execute([$deviceId]);
-    $vehicleId = (int)$targetQuery->fetchColumn();
+    $targetActivation = $targetQuery->fetch(PDO::FETCH_ASSOC);
+    if (!$targetActivation
+        || ($targetActivation['status'] !== 'EXPIRED'
+            && !($targetActivation['status'] === 'PENDING' && (int)$targetActivation['expired'] === 1))) {
+        $pdo->rollBack();
+        driver_error(409, 'ACTIVATION_NOT_EXPIRED', 'La activación actual no está vencida.');
+    }
+
+    $vehicleId = (int)$targetActivation['vehicle_id'];
+    $driverId = $targetActivation['driver_id'] === null ? null : (int)$targetActivation['driver_id'];
     if ($vehicleId <= 0 || !driver_find_enabled_vehicle($pdo, $vehicleId, $tenantId)) {
         $pdo->rollBack();
         driver_error(409, 'ACTIVATION_CONFLICT', 'La activación no tiene un vehículo objetivo válido.');
@@ -57,19 +67,20 @@ try {
 
     $expirePrevious = $pdo->prepare(
         "UPDATE device_activations SET status = 'EXPIRED'
-         WHERE device_id = ? AND status = 'PENDING'"
+         WHERE id = ? AND status = 'PENDING'"
     );
-    $expirePrevious->execute([$deviceId]);
+    $expirePrevious->execute([$targetActivation['id']]);
 
     $activationCode = driver_generate_activation_code($pdo);
     $expiresAt = (new DateTimeImmutable('now'))->modify('+7 days')->format('Y-m-d H:i:s');
 
     $insertActivation = $pdo->prepare(
         'INSERT INTO device_activations
-         (device_id, vehicle_id, activation_code, status, expires_at, sent_at, used_at)
-         VALUES (?, ?, ?, ?, ?, NULL, NULL)'
+         (device_id, vehicle_id, driver_id, activation_code, status, expires_at,
+          delivery_started_at, sent_at, used_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL)'
     );
-    $insertActivation->execute([$deviceId, $vehicleId, $activationCode, 'PENDING', $expiresAt]);
+    $insertActivation->execute([$deviceId, $vehicleId, $driverId, $activationCode, 'PENDING', $expiresAt]);
     $activationId = (int)$pdo->lastInsertId();
 
     $pdo->commit();

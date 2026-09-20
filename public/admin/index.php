@@ -20,6 +20,10 @@ if (($requestedSection !== null && !is_string($requestedSection)) || ($requested
     http_response_code(404);
     exit('Página no encontrada');
 }
+if ($requestedSection === 'driver' && $requestedPage === 'nueva_activacion') {
+    header('Location: /admin/?section=driver&page=devices', true, 302);
+    exit;
+}
 
 if ($requestedSection === null && $requestedPage === null && $visibleNavigation !== []) {
     $requestedSection = array_key_first($visibleNavigation);

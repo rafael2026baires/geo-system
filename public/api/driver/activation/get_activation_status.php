@@ -36,8 +36,11 @@ try {
         driver_error(404, 'DEVICE_NOT_FOUND', 'Dispositivo no encontrado.');
     }
 
+    driver_expire_pending_activations($pdo, $tenantId, $deviceId);
+
     $activationQuery = $pdo->prepare(
-        'SELECT id, vehicle_id, activation_code, status, created_at, expires_at, sent_at, used_at,
+        'SELECT id, vehicle_id, driver_id, activation_code, status, created_at, expires_at,
+                delivery_started_at, sent_at, used_at, cancelled_at,
                 (expires_at <= NOW()) AS expired
          FROM device_activations
          WHERE device_id = ?
@@ -51,19 +54,34 @@ try {
     $administrativeStatus = 'NO_ACTIVATION';
 
     if ($row) {
+        $recipient = null;
+        if ($row['driver_id'] !== null) {
+            $recipientQuery = $pdo->prepare(
+                'SELECT id, name, phone, email FROM drivers WHERE id = ? AND tenant_id = ? LIMIT 1'
+            );
+            $recipientQuery->execute([$row['driver_id'], $tenantId]);
+            $recipient = $recipientQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($recipient) {
+                $recipient['id'] = (int)$recipient['id'];
+            }
+        }
         $status = $row['status'];
         if ($status === 'PENDING' && (int)$row['expired'] === 1) {
             $status = 'EXPIRED';
         }
 
-        if ($status === 'EXPIRED') {
+        if ($status === 'CANCELLED') {
+            $administrativeStatus = 'CANCELLED';
+        } elseif ($status === 'EXPIRED') {
             $administrativeStatus = 'EXPIRED';
         } elseif ($status === 'USED') {
             $administrativeStatus = 'ACTIVATED';
         } elseif ($status === 'PENDING') {
-            $administrativeStatus = $row['sent_at'] === null
-                ? 'PENDING_SEND'
-                : 'SENT_PENDING_ACTIVATION';
+            $administrativeStatus = $row['sent_at'] !== null
+                ? 'SENT_PENDING_ACTIVATION'
+                : ($row['delivery_started_at'] !== null
+                    ? 'DELIVERY_STARTED_PENDING_CONFIRMATION'
+                    : 'PENDING_SEND');
         } else {
             throw new RuntimeException('Estado de activación desconocido.');
         }
@@ -71,13 +89,17 @@ try {
         $activation = [
             'activation_id' => (int)$row['id'],
             'vehicle_id' => (int)$row['vehicle_id'],
+            'driver_id' => $row['driver_id'] === null ? null : (int)$row['driver_id'],
+            'recipient' => $recipient,
             'activation_code' => $row['activation_code'],
             'status' => $status,
             'administrative_status' => $administrativeStatus,
             'created_at' => $row['created_at'],
             'expires_at' => $row['expires_at'],
+            'delivery_started_at' => $row['delivery_started_at'],
             'sent_at' => $row['sent_at'],
-            'used_at' => $row['used_at']
+            'used_at' => $row['used_at'],
+            'cancelled_at' => $row['cancelled_at']
         ];
     }
 

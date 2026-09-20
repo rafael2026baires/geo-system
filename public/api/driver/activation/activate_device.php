@@ -53,6 +53,11 @@ try {
         driver_error(404, 'ACTIVATION_CODE_INVALID', 'Código de activación inválido.');
     }
 
+    if ($activation['status'] === 'CANCELLED') {
+        $pdo->rollBack();
+        driver_error(410, 'ACTIVATION_CANCELLED', 'La activación fue cancelada.');
+    }
+
     if ((int)$activation['active'] !== 1) {
         $pdo->rollBack();
         driver_error(403, 'DEVICE_DISABLED', 'El dispositivo está deshabilitado.');

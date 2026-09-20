@@ -11,11 +11,20 @@ $tenantId = driver_session_tenant_id();
 driver_require_permission('driver.activacion.crear');
 
 try {
+    $currentActivation = driver_current_activation_condition('current_a');
     $query = $pdo->prepare(
-        'SELECT id, guy, brand, model, patent
-         FROM vehicles
-         WHERE tenant_id = ? AND enabled = 1
-         ORDER BY id'
+        "SELECT v.id, v.guy, v.brand, v.model, v.patent
+         FROM vehicles v
+         WHERE v.tenant_id = ? AND v.enabled = 1
+           AND NOT EXISTS (
+               SELECT 1
+               FROM device_activations current_a
+               INNER JOIN devices current_d ON current_d.id = current_a.device_id
+               WHERE current_a.vehicle_id = v.id
+                 AND current_d.tenant_id = v.tenant_id
+                 AND $currentActivation
+           )
+         ORDER BY v.id"
     );
     $query->execute([$tenantId]);
     $vehicles = $query->fetchAll(PDO::FETCH_ASSOC);
