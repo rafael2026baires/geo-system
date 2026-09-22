@@ -10,6 +10,7 @@ $driverPermissions = [
     'send' => can('driver.activacion.enviar'),
     'cancel' => can('driver.activacion.cancelar'),
     'regenerate' => can('driver.activacion.regenerar'),
+    'reactivate' => can('driver.activacion.reactivar'),
     'enable' => can('driver.device.habilitar'),
     'disable' => can('driver.device.deshabilitar'),
 ];

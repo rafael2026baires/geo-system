@@ -359,6 +359,7 @@
 
     function renderManagedContent(detail, device, openDelivery = false) {
       const current = detail.activation;
+      drawerTitle.textContent = detail.administrative_status === 'CANCELLED' ? 'Detalle de activación' : 'Gestionar';
       const vehicle = detail.effective_vehicle || detail.target_vehicle;
       const context = [
         ['Dispositivo', detail.device_uuid],
@@ -379,6 +380,12 @@
       if (current?.recipient?.email) expanded.push(['Email', current.recipient.email]);
       if (detail.administrative_status === 'SENT_PENDING_ACTIVATION' && current?.activation_code) {
         expanded.push(['Código de activación', current.activation_code]);
+      }
+      if (detail.administrative_status === 'CANCELLED') {
+        const information = el('section', 'admin-drawer-section');
+        information.append(el('p', 'driver-hint', 'Esta activación fue cancelada de forma definitiva. El código dejó de ser válido. Para iniciar nuevamente el proceso, debe generarse una Nueva activación.'));
+        drawerBody.replaceChildren(drawerSection('Contexto', context), drawerSection('Detalle', expanded), information);
+        return;
       }
       const action = el('section', 'admin-drawer-section admin-drawer-action');
       action.append(el('h3', '', 'Acción contextual'));
@@ -494,6 +501,45 @@
         );
       } else if (detail.administrative_status === 'SENT_PENDING_ACTIVATION') {
         action.append(restartDeliveryAction());
+      } else if (detail.administrative_status === 'ACTIVATED' && detail.enabled && permissions.reactivate) {
+        const showTrigger = () => {
+          action.replaceChildren(
+            el('h3', '', 'Acción contextual'),
+            actionButton('Reactivar dispositivo', 'driver-button-primary', showConfirmation)
+          );
+        };
+        const showConfirmation = () => {
+          const confirmation = el('div', 'admin-drawer-cancel-confirmation');
+          confirmation.append(
+            el('strong', '', '¿Reactivar este dispositivo?'),
+            el('p', 'driver-hint', 'Se generará un nuevo código para recuperar este mismo dispositivo sin crear uno nuevo ni modificar su vehículo asociado.')
+          );
+          const buttons = el('div', 'driver-actions');
+          buttons.append(
+            actionButton('Reactivar dispositivo', 'driver-button-primary', async () => {
+              if (busy) return;
+              clearMessage();
+              setBusy(true);
+              try {
+                await post('/api/driver/activation/reactivate_device.php', { device_id: device.device_id, confirm: true });
+                const updated = await request(`/api/driver/activation/get_activation_status.php?device_id=${encodeURIComponent(device.device_id)}`);
+                device.administrative_status = updated.administrative_status;
+                device.delivery_started_at = updated.activation?.delivery_started_at ?? null;
+                device.sent_at = updated.activation?.sent_at ?? null;
+                renderManagedContent(updated, device);
+                await refreshDevices();
+              } catch (error) {
+                showMessage(error.message || 'No se pudo reactivar el dispositivo.', true);
+              } finally {
+                setBusy(false);
+              }
+            }),
+            actionButton('Volver', '', showTrigger)
+          );
+          confirmation.append(buttons);
+          action.replaceChildren(el('h3', '', 'Acción contextual'), confirmation);
+        };
+        showTrigger();
       } else if (detail.administrative_status === 'EXPIRED' && permissions.regenerate) {
         action.append(actionButton('Renovar activación', 'driver-button-primary', async () => {
           if (busy) return;
@@ -513,8 +559,6 @@
             setBusy(false);
           }
         }));
-      } else if (detail.administrative_status === 'CANCELLED') {
-        action.append(el('p', 'driver-hint', 'Esta activación fue cancelada.'));
       } else {
         action.append(el('p', 'driver-hint', 'Sin acción operativa disponible.'));
       }
@@ -525,7 +569,7 @@
     }
 
     async function openDeviceDrawer(device, opener) {
-      const requestId = openDrawer(opener, 'Gestionar', deviceName(device));
+      const requestId = openDrawer(opener, device.administrative_status === 'CANCELLED' ? 'Detalle de activación' : 'Gestionar', deviceName(device));
       try {
         const detail = await request(`/api/driver/activation/get_activation_status.php?device_id=${encodeURIComponent(device.device_id)}`);
         if (requestId !== drawerRequest) return;
@@ -556,7 +600,7 @@
     });
 
     function manageLink(device) {
-      const link = el('a', 'driver-text-link', 'Gestionar');
+      const link = el('a', 'driver-text-link', device.administrative_status === 'CANCELLED' ? 'Ver detalle' : 'Gestionar');
       link.href = detailUrl(device.device_id);
       link.addEventListener('click', event => {
         event.preventDefault();

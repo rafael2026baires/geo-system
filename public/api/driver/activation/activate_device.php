@@ -68,6 +68,18 @@ try {
         driver_error(410, 'ACTIVATION_EXPIRED', 'La activación está vencida.');
     }
 
+    if ($activation['status'] === 'USED' || $activation['status'] === 'PENDING') {
+        $latestQuery = $pdo->prepare(
+            'SELECT id FROM device_activations WHERE device_id = ?
+             ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
+        );
+        $latestQuery->execute([$activation['device_id']]);
+        if ((int)$latestQuery->fetchColumn() !== (int)$activation['id']) {
+            $pdo->rollBack();
+            driver_error(409, 'ACTIVATION_CONFLICT', 'El código pertenece a una activación anterior.');
+        }
+    }
+
     if ($activation['status'] === 'USED') {
         $usedLinks = $pdo->prepare(
             'SELECT vehicle_id FROM vehicle_devices WHERE device_id = ? FOR UPDATE'
