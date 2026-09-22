@@ -27,4 +27,4 @@ require __DIR__ . '/../../components/driver_header.php';
   <div class="driver-actions"><a class="driver-button" href="/admin/?section=driver&amp;page=devices">Volver al listado</a></div>
 </section>
 </main>
-<script src="/admin/assets/js/driver.js" defer></script>
+<script src="<?= htmlspecialchars(admin_asset('/admin/assets/js/driver.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>

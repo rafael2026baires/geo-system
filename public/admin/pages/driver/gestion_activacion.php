@@ -13,4 +13,4 @@ require __DIR__ . '/../../components/driver_header.php';
   <section class="driver-panel driver-special" id="specialActions"><span class="driver-kicker">HABILITACIÓN Y OTRAS ACCIONES</span><h2>Acciones adicionales</h2><div class="driver-actions" id="specialButtons"></div></section>
 </div>
 </main>
-<script src="/admin/assets/js/driver.js" defer></script>
+<script src="<?= htmlspecialchars(admin_asset('/admin/assets/js/driver.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>

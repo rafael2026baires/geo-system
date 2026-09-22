@@ -63,4 +63,4 @@ if ($pageFile !== null) {
 } else {
     echo '<main class="admin-content"><div class="empty-state"><h1>Sin páginas disponibles</h1><p>Tu sesión no tiene páginas administrativas habilitadas.</p></div></main>';
 }
-echo '</div></div><script src="/admin/assets/js/admin.js" defer></script></body></html>';
+echo '</div></div><script src="' . htmlspecialchars(admin_asset('/admin/assets/js/admin.js'), ENT_QUOTES, 'UTF-8') . '" defer></script></body></html>';

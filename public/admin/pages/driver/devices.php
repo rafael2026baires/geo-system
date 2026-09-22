@@ -27,4 +27,4 @@ require __DIR__ . '/../../components/driver_header.php';
   <div class="admin-drawer-body" id="deviceDrawerBody"></div>
 </aside>
 </main>
-<script src="/admin/assets/js/driver.js" defer></script>
+<script src="<?= htmlspecialchars(admin_asset('/admin/assets/js/driver.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
