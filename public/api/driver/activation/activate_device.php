@@ -68,7 +68,12 @@ try {
         driver_error(410, 'ACTIVATION_EXPIRED', 'La activación está vencida.');
     }
 
-    if ($activation['status'] === 'USED' || $activation['status'] === 'PENDING') {
+    if ($activation['status'] === 'USED') {
+        $pdo->rollBack();
+        driver_error(409, 'ACTIVATION_ALREADY_USED', 'Este código de activación ya fue utilizado.');
+    }
+
+    if ($activation['status'] === 'PENDING') {
         $latestQuery = $pdo->prepare(
             'SELECT id FROM device_activations WHERE device_id = ?
              ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
@@ -78,27 +83,6 @@ try {
             $pdo->rollBack();
             driver_error(409, 'ACTIVATION_CONFLICT', 'El código pertenece a una activación anterior.');
         }
-    }
-
-    if ($activation['status'] === 'USED') {
-        $usedLinks = $pdo->prepare(
-            'SELECT vehicle_id FROM vehicle_devices WHERE device_id = ? FOR UPDATE'
-        );
-        $usedLinks->execute([$activation['device_id']]);
-        $linkedVehicleIds = $usedLinks->fetchAll(PDO::FETCH_COLUMN);
-        if (count($linkedVehicleIds) !== 1
-            || (int)$linkedVehicleIds[0] !== (int)$activation['vehicle_id']) {
-            $pdo->rollBack();
-            driver_error(409, 'ACTIVATION_CONFLICT', 'La activación no tiene el vínculo esperado.');
-        }
-        $pdo->commit();
-        driver_response(200, [
-            'success' => true,
-            'data' => [
-                'device_uuid' => $activation['device_uuid'],
-                'result' => 'ALREADY_ACTIVATED'
-            ]
-        ]);
     }
 
     if ($activation['status'] !== 'PENDING') {
