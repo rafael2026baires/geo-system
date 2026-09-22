@@ -20,7 +20,8 @@ try {
     $pdo->beginTransaction();
 
     $select = $pdo->prepare(
-        'SELECT a.status, a.used_at, a.cancelled_at, (a.expires_at <= NOW()) AS expired
+        'SELECT a.device_id, a.replaces_device_id, a.status, a.used_at, a.cancelled_at,
+                (a.expires_at <= NOW()) AS expired
          FROM device_activations a
          INNER JOIN devices d ON d.id = a.device_id
          WHERE a.id = ? AND d.tenant_id = ?
@@ -35,6 +36,10 @@ try {
     }
 
     if ($activation['status'] === 'CANCELLED') {
+        if ($activation['replaces_device_id'] !== null) {
+            $disableReplacement = $pdo->prepare('UPDATE devices SET active = 0 WHERE id = ?');
+            $disableReplacement->execute([$activation['device_id']]);
+        }
         $pdo->commit();
         driver_response(200, [
             'success' => true,
@@ -58,6 +63,10 @@ try {
              WHERE id = ? AND status = 'PENDING' AND expires_at <= NOW()"
         );
         $expire->execute([$activationId]);
+        if ($activation['replaces_device_id'] !== null) {
+            $disableReplacement = $pdo->prepare('UPDATE devices SET active = 0 WHERE id = ?');
+            $disableReplacement->execute([$activation['device_id']]);
+        }
         $pdo->commit();
         driver_error(410, 'ACTIVATION_EXPIRED', 'La activación está vencida.');
     }
@@ -75,8 +84,17 @@ try {
              WHERE id = ? AND status = 'PENDING' AND expires_at <= NOW()"
         );
         $expire->execute([$activationId]);
+        if ($activation['replaces_device_id'] !== null) {
+            $disableReplacement = $pdo->prepare('UPDATE devices SET active = 0 WHERE id = ?');
+            $disableReplacement->execute([$activation['device_id']]);
+        }
         $pdo->commit();
         driver_error(410, 'ACTIVATION_EXPIRED', 'La activación está vencida.');
+    }
+
+    if ($activation['replaces_device_id'] !== null) {
+        $disableReplacement = $pdo->prepare('UPDATE devices SET active = 0 WHERE id = ?');
+        $disableReplacement->execute([$activation['device_id']]);
     }
 
     $readCancelledAt = $pdo->prepare('SELECT cancelled_at FROM device_activations WHERE id = ?');

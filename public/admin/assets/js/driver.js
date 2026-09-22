@@ -359,6 +359,8 @@
 
     function renderManagedContent(detail, device, openDelivery = false) {
       const current = detail.activation;
+      const pendingReplacementStatuses = ['PENDING_SEND', 'DELIVERY_STARTED_PENDING_CONFIRMATION', 'SENT_PENDING_ACTIVATION'];
+      const replacementPending = pendingReplacementStatuses.includes(detail.replacement?.administrative_status);
       drawerTitle.textContent = detail.administrative_status === 'CANCELLED' ? 'Detalle de activación' : 'Gestionar';
       const vehicle = detail.effective_vehicle || detail.target_vehicle;
       const context = [
@@ -367,6 +369,15 @@
         ['Destinatario', current?.recipient?.name || 'No registrado'],
         ['Activación', statusText(detail.administrative_status, current)]
       ];
+      if (current?.replaces_device_uuid) context.push(['Reemplaza a', current.replaces_device_uuid]);
+      if (detail.replacement) {
+        const replacementLabel = detail.replacement.administrative_status === 'ACTIVATED'
+          ? `Reemplazado por ${detail.replacement.device_uuid}`
+          : (replacementPending
+            ? `Reemplazo pendiente · ${detail.replacement.device_uuid}`
+            : `Intento ${statusText(detail.replacement.administrative_status).toLocaleLowerCase()} · ${detail.replacement.device_uuid}`);
+        context.push(['Reemplazo', replacementLabel]);
+      }
       const expanded = [];
       if (detail.brand) expanded.push(['Marca', detail.brand]);
       if (detail.model) expanded.push(['Modelo', detail.model]);
@@ -501,7 +512,53 @@
         );
       } else if (detail.administrative_status === 'SENT_PENDING_ACTIVATION') {
         action.append(restartDeliveryAction());
-      } else if (detail.administrative_status === 'ACTIVATED' && detail.enabled && permissions.reactivate) {
+      } else if (detail.administrative_status === 'ACTIVATED'
+        && detail.enabled
+        && detail.effective_vehicle_count === 1
+        && permissions.replace
+        && !replacementPending) {
+        const showTrigger = () => {
+          action.replaceChildren(
+            el('h3', '', 'Acción contextual'),
+            actionButton('Reemplazar dispositivo', 'driver-button-primary', showConfirmation)
+          );
+        };
+        const showConfirmation = () => {
+          const confirmation = el('div', 'admin-drawer-cancel-confirmation');
+          confirmation.append(
+            el('strong', '', '¿Reemplazar este dispositivo?'),
+            el('p', 'driver-hint', 'Se generará un nuevo código para activar un móvil nuevo. El dispositivo actual seguirá operativo hasta que el nuevo se active correctamente.')
+          );
+          const confirmationContext = drawerSection('Contexto', [
+            ['Dispositivo actual', detail.device_uuid],
+            ['Vehículo', vehicle?.patent || '—'],
+            ['Destinatario', current?.recipient?.name || 'No registrado']
+          ]);
+          const buttons = el('div', 'driver-actions');
+          buttons.append(
+            actionButton('Reemplazar dispositivo', 'driver-button-primary', async () => {
+              if (busy) return;
+              clearMessage();
+              setBusy(true);
+              try {
+                const created = await post('/api/driver/activation/replace_device.php', { device_id: device.device_id, confirm: true });
+                const updated = await request(`/api/driver/activation/get_activation_status.php?device_id=${encodeURIComponent(created.device_id)}`);
+                const replacementDevice = { device_id: created.device_id, administrative_status: updated.administrative_status };
+                renderManagedContent(updated, replacementDevice);
+                await refreshDevices();
+              } catch (error) {
+                showMessage(error.message || 'No se pudo iniciar el reemplazo.', true);
+              } finally {
+                setBusy(false);
+              }
+            }),
+            actionButton('Volver', '', showTrigger)
+          );
+          confirmation.append(confirmationContext, buttons);
+          action.replaceChildren(el('h3', '', 'Acción contextual'), confirmation);
+        };
+        showTrigger();
+      } else if (detail.administrative_status === 'ACTIVATED' && detail.enabled && permissions.reactivate && !replacementPending) {
         const showTrigger = () => {
           action.replaceChildren(
             el('h3', '', 'Acción contextual'),
@@ -540,7 +597,7 @@
           action.replaceChildren(el('h3', '', 'Acción contextual'), confirmation);
         };
         showTrigger();
-      } else if (detail.administrative_status === 'EXPIRED' && permissions.regenerate) {
+      } else if (detail.administrative_status === 'EXPIRED' && permissions.regenerate && !current?.replaces_device_id) {
         action.append(actionButton('Renovar activación', 'driver-button-primary', async () => {
           if (busy) return;
           clearMessage();
@@ -628,6 +685,15 @@
         tr.append(deviceCell);
         const statusCell = el('td');
         statusCell.append(badge(statusText(device.administrative_status, device, true), device.administrative_status === 'ACTIVATED' ? 'is-good' : 'is-neutral'));
+        if (device.replaces_device_uuid) statusCell.append(el('small', 'driver-hint', `Reemplaza a ${device.replaces_device_uuid}`));
+        if (device.replacement_device_uuid) {
+          const replacementText = device.replacement_administrative_status === 'ACTIVATED'
+            ? `Reemplazado por ${device.replacement_device_uuid}`
+            : (['PENDING_SEND', 'DELIVERY_STARTED_PENDING_CONFIRMATION', 'SENT_PENDING_ACTIVATION'].includes(device.replacement_administrative_status)
+              ? 'Reemplazo pendiente'
+              : `Intento ${statusText(device.replacement_administrative_status).toLocaleLowerCase()}`);
+          statusCell.append(el('small', 'driver-hint', replacementText));
+        }
         tr.append(statusCell);
         const enabledCell = el('td', 'driver-enablement');
         enabledCell.append(badge(device.enabled ? 'Habilitado' : 'Deshabilitado', device.enabled ? 'is-good' : 'is-muted'));
@@ -642,6 +708,15 @@
         const card = el('article', 'driver-device-card');
         card.append(el('strong', '', deviceName(device)));
         card.append(badge(statusText(device.administrative_status, device, true), 'is-neutral'));
+        if (device.replaces_device_uuid) card.append(el('span', 'driver-hint', `Reemplaza a ${device.replaces_device_uuid}`));
+        if (device.replacement_device_uuid) {
+          const replacementText = device.replacement_administrative_status === 'ACTIVATED'
+            ? `Reemplazado por ${device.replacement_device_uuid}`
+            : (['PENDING_SEND', 'DELIVERY_STARTED_PENDING_CONFIRMATION', 'SENT_PENDING_ACTIVATION'].includes(device.replacement_administrative_status)
+              ? 'Reemplazo pendiente'
+              : `Intento ${statusText(device.replacement_administrative_status).toLocaleLowerCase()}`);
+          card.append(el('span', 'driver-hint', replacementText));
+        }
         const cardEnablement = el('div', 'driver-enablement');
         cardEnablement.append(badge(device.enabled ? 'Habilitado' : 'Deshabilitado', device.enabled ? 'is-good' : 'is-muted'));
         card.append(cardEnablement);

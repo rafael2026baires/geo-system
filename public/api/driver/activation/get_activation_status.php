@@ -36,15 +36,18 @@ try {
         driver_error(404, 'DEVICE_NOT_FOUND', 'Dispositivo no encontrado.');
     }
 
-    driver_expire_pending_activations($pdo, $tenantId, $deviceId);
+    driver_expire_pending_activations($pdo, $tenantId);
 
     $activationQuery = $pdo->prepare(
-        'SELECT id, vehicle_id, driver_id, activation_code, status, created_at, expires_at,
-                delivery_started_at, sent_at, used_at, cancelled_at,
-                (expires_at <= NOW()) AS expired
-         FROM device_activations
-         WHERE device_id = ?
-         ORDER BY created_at DESC, id DESC
+        'SELECT a.id, a.vehicle_id, a.driver_id, a.replaces_device_id,
+                replaced.device_uuid AS replaces_device_uuid,
+                a.activation_code, a.status, a.created_at, a.expires_at,
+                a.delivery_started_at, a.sent_at, a.used_at, a.cancelled_at,
+                (a.expires_at <= NOW()) AS expired
+         FROM device_activations a
+         LEFT JOIN devices replaced ON replaced.id = a.replaces_device_id
+         WHERE a.device_id = ?
+         ORDER BY a.created_at DESC, a.id DESC
          LIMIT 1'
     );
     $activationQuery->execute([$deviceId]);
@@ -90,6 +93,8 @@ try {
             'activation_id' => (int)$row['id'],
             'vehicle_id' => (int)$row['vehicle_id'],
             'driver_id' => $row['driver_id'] === null ? null : (int)$row['driver_id'],
+            'replaces_device_id' => $row['replaces_device_id'] === null ? null : (int)$row['replaces_device_id'],
+            'replaces_device_uuid' => $row['replaces_device_uuid'],
             'recipient' => $recipient,
             'activation_code' => $row['activation_code'],
             'status' => $status,
@@ -118,10 +123,36 @@ try {
     $vehicleQuery = $pdo->prepare(
         'SELECT v.id, v.patent FROM vehicle_devices vd
          INNER JOIN vehicles v ON v.id = vd.vehicle_id
-         WHERE vd.device_id = ? AND v.tenant_id = ? LIMIT 1'
+         WHERE vd.device_id = ? AND v.tenant_id = ? ORDER BY v.id'
     );
     $vehicleQuery->execute([$deviceId, $tenantId]);
-    $vehicle = $vehicleQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+    $vehicleRows = $vehicleQuery->fetchAll(PDO::FETCH_ASSOC);
+    $vehicle = $vehicleRows[0] ?? null;
+
+    $replacementQuery = $pdo->prepare(
+        'SELECT a.id AS activation_id, a.device_id, d.device_uuid, d.active,
+                a.status, a.expires_at, a.delivery_started_at, a.sent_at, a.used_at,
+                a.cancelled_at, (a.expires_at <= NOW()) AS expired
+         FROM device_activations a
+         INNER JOIN devices d ON d.id = a.device_id AND d.tenant_id = ?
+         WHERE a.replaces_device_id = ?
+         ORDER BY a.created_at DESC, a.id DESC LIMIT 1'
+    );
+    $replacementQuery->execute([$tenantId, $deviceId]);
+    $replacement = $replacementQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($replacement) {
+        $replacementStatus = $replacement['status'];
+        $replacement['administrative_status'] = $replacementStatus === 'USED' ? 'ACTIVATED'
+            : ($replacementStatus === 'CANCELLED' ? 'CANCELLED'
+            : ($replacementStatus === 'EXPIRED' || (int)$replacement['expired'] === 1 ? 'EXPIRED'
+            : ($replacement['sent_at'] !== null ? 'SENT_PENDING_ACTIVATION'
+            : ($replacement['delivery_started_at'] !== null
+                ? 'DELIVERY_STARTED_PENDING_CONFIRMATION' : 'PENDING_SEND'))));
+        $replacement['activation_id'] = (int)$replacement['activation_id'];
+        $replacement['device_id'] = (int)$replacement['device_id'];
+        $replacement['enabled'] = (int)$replacement['active'] === 1;
+        unset($replacement['active'], $replacement['expired']);
+    }
 
     $driverQuery = $pdo->prepare(
         'SELECT dr.id, dr.name FROM policy_driver_device p
@@ -143,6 +174,8 @@ try {
             'activation' => $activation,
             'target_vehicle' => $targetVehicle,
             'effective_vehicle' => $vehicle,
+            'effective_vehicle_count' => count($vehicleRows),
+            'replacement' => $replacement,
             'associations' => ['vehicle' => $vehicle, 'driver' => $driver],
             'administrative_status' => $administrativeStatus
         ]

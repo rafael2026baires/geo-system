@@ -85,6 +85,20 @@ function driver_generate_activation_code(PDO $pdo): string
     throw new RuntimeException('No se pudo generar un código único.');
 }
 
+function driver_generate_device_uuid(PDO $pdo): string
+{
+    $checkDevice = $pdo->prepare('SELECT id FROM devices WHERE device_uuid = ? LIMIT 1');
+    for ($attempt = 0; $attempt < 10; $attempt++) {
+        $deviceUuid = 'U-' . strtoupper(bin2hex(random_bytes(4)));
+        $checkDevice->execute([$deviceUuid]);
+        if (!$checkDevice->fetchColumn()) {
+            return $deviceUuid;
+        }
+    }
+
+    throw new RuntimeException('No se pudo generar un identificador único.');
+}
+
 function driver_find_enabled_vehicle(PDO $pdo, int $vehicleId, int $tenantId): ?array
 {
     $query = $pdo->prepare(
@@ -115,7 +129,8 @@ function driver_expire_pending_activations(PDO $pdo, int $tenantId, ?int $device
 {
     $sql = "UPDATE device_activations a
             INNER JOIN devices d ON d.id = a.device_id
-            SET a.status = 'EXPIRED'
+            SET a.status = 'EXPIRED',
+                d.active = IF(a.replaces_device_id IS NOT NULL, 0, d.active)
             WHERE d.tenant_id = ?
               AND a.status = 'PENDING'
               AND a.expires_at <= NOW()";
@@ -148,18 +163,7 @@ function driver_vehicle_has_current_activation(PDO $pdo, int $vehicleId, int $te
 
 function driver_create_activation_for_vehicle(PDO $pdo, int $tenantId, int $vehicleId, ?int $driverId = null): array
 {
-    $checkDevice = $pdo->prepare('SELECT id FROM devices WHERE device_uuid = ? LIMIT 1');
-    for ($attempt = 0; $attempt < 10; $attempt++) {
-        $deviceUuid = 'U-' . strtoupper(bin2hex(random_bytes(4)));
-        $checkDevice->execute([$deviceUuid]);
-        if (!$checkDevice->fetchColumn()) {
-            break;
-        }
-    }
-    if ($attempt === 10) {
-        throw new RuntimeException('No se pudo generar un identificador único.');
-    }
-
+    $deviceUuid = driver_generate_device_uuid($pdo);
     $activationCode = driver_generate_activation_code($pdo);
     $expiresAt = (new DateTimeImmutable('now'))->modify('+7 days')->format('Y-m-d H:i:s');
 

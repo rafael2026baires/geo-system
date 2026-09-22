@@ -15,6 +15,7 @@ try {
 
     $currentActivation = driver_current_activation_condition('current_a');
     $laterCurrentActivation = driver_current_activation_condition('later_a');
+    $currentReplacement = driver_current_activation_condition('replacement_a');
     $stmt = $pdo->prepare("
         SELECT dr.id, dr.name, dr.dni, dr.phone, dr.email, dr.notes,
                COALESCE(current_counts.current_activation_count, 0) AS current_activation_count
@@ -31,6 +32,11 @@ try {
                     AND $laterCurrentActivation
                     AND (later_a.created_at > current_a.created_at
                          OR (later_a.created_at = current_a.created_at AND later_a.id > current_a.id))
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM device_activations replacement_a
+                  WHERE replacement_a.replaces_device_id = current_a.device_id
+                    AND $currentReplacement
               )
             GROUP BY current_a.driver_id, current_d.tenant_id
         ) current_counts
