@@ -361,6 +361,8 @@
       const current = detail.activation;
       const pendingReplacementStatuses = ['PENDING_SEND', 'DELIVERY_STARTED_PENDING_CONFIRMATION', 'SENT_PENDING_ACTIVATION'];
       const replacementPending = pendingReplacementStatuses.includes(detail.replacement?.administrative_status);
+      const participatesInPendingReplacement = replacementPending
+        || (current?.replaces_device_id && pendingReplacementStatuses.includes(detail.administrative_status));
       drawerTitle.textContent = detail.administrative_status === 'CANCELLED' ? 'Detalle de activación' : 'Gestionar';
       const vehicle = detail.effective_vehicle || detail.target_vehicle;
       const context = [
@@ -392,10 +394,162 @@
       if (detail.administrative_status === 'SENT_PENDING_ACTIVATION' && current?.activation_code) {
         expanded.push(['Código de activación', current.activation_code]);
       }
+      const technicalEnablementAction = () => {
+        const next = !detail.enabled;
+        const permission = next ? permissions.enable : permissions.disable;
+        if (!permission || participatesInPendingReplacement) return null;
+        const group = el('div', 'admin-drawer-secondary-action');
+        const showTrigger = () => {
+          group.replaceChildren(actionButton(next ? 'Habilitar dispositivo' : 'Deshabilitar dispositivo', 'driver-inline-action', showConfirmation));
+        };
+        const showConfirmation = () => {
+          const confirmation = el('div', 'admin-drawer-cancel-confirmation');
+          confirmation.append(
+            el('strong', '', next ? '¿Habilitar este dispositivo?' : '¿Deshabilitar este dispositivo?'),
+            el('p', 'driver-hint', next
+              ? 'El dispositivo volverá a quedar habilitado técnicamente. Esto no crea asociaciones ni activaciones nuevas.'
+              : 'El dispositivo dejará de operar y de enviar posiciones. La activación, el historial y la asociación con el vehículo se conservarán.')
+          );
+          const buttons = el('div', 'driver-actions');
+          buttons.append(
+            actionButton(next ? 'Habilitar dispositivo' : 'Deshabilitar dispositivo', next ? '' : 'driver-button-danger', async () => {
+              if (busy) return;
+              clearMessage();
+              setBusy(true);
+              try {
+                await changeEnabled(device, next);
+                const updated = await request(`/api/driver/activation/get_activation_status.php?device_id=${encodeURIComponent(device.device_id)}`);
+                device.enabled = updated.enabled;
+                renderManagedContent(updated, device);
+                await refreshDevices();
+              } catch (error) {
+                showMessage(error.message || 'No se pudo actualizar la habilitación del dispositivo.', true);
+              } finally {
+                setBusy(false);
+              }
+            }),
+            actionButton('Volver', '', showTrigger)
+          );
+          confirmation.append(buttons);
+          group.replaceChildren(confirmation);
+        };
+        showTrigger();
+        return group;
+      };
+      const vehicleAssignmentAction = () => {
+        const associationCount = Number(detail.effective_vehicle_count);
+        if (!permissions.assignVehicle
+          || !detail.enabled
+          || detail.has_used_activation !== true
+          || detail.has_pending_activation === true
+          || detail.has_pending_replacement === true
+          || associationCount < 0
+          || associationCount > 1
+          || pendingReplacementStatuses.includes(detail.administrative_status)
+          || participatesInPendingReplacement) return null;
+
+        const currentVehicle = associationCount === 1 ? detail.effective_vehicle : null;
+        const actionLabel = currentVehicle ? 'Reasignar vehículo' : 'Asignar vehículo';
+        const group = el('div', 'admin-drawer-secondary-action');
+        const showTrigger = () => {
+          group.replaceChildren(actionButton(actionLabel, 'driver-inline-action', showForm));
+        };
+        const showForm = async () => {
+          if (busy) return;
+          clearMessage();
+          setBusy(true);
+          try {
+            const availableVehicles = await request(`/api/driver/vehicles/list_assignable_vehicles.php?device_id=${encodeURIComponent(device.device_id)}`);
+            const form = el('div', 'driver-form-grid');
+            form.append(el('p', 'driver-hint', `Dispositivo: ${detail.device_uuid}`));
+            if (currentVehicle) form.append(el('p', 'driver-hint', `Vehículo actual: ${currentVehicle.patent || `#${currentVehicle.id}`}`));
+            if (!availableVehicles.length) {
+              form.append(el('p', 'driver-hint', 'No hay vehículos disponibles para esta operación.'));
+              form.append(actionButton('Volver', '', showTrigger));
+              group.replaceChildren(form);
+              return;
+            }
+            const label = el('label');
+            const select = el('select');
+            select.append(el('option', '', 'Seleccionar vehículo'));
+            select.firstChild.value = '';
+            availableVehicles.forEach(availableVehicle => {
+              const option = el('option', '', [availableVehicle.patent, availableVehicle.guy, availableVehicle.brand, availableVehicle.model].filter(Boolean).join(' · ') || `Vehículo #${availableVehicle.id}`);
+              option.value = availableVehicle.id;
+              select.append(option);
+            });
+            label.append(el('span', '', 'Vehículo destino *'), select);
+            const buttons = el('div', 'driver-actions');
+            buttons.append(
+              actionButton(actionLabel, 'driver-button-primary', () => {
+                const vehicleId = Number(select.value);
+                if (!Number.isSafeInteger(vehicleId) || vehicleId <= 0) {
+                  showMessage('Seleccioná un vehículo.', true);
+                  return;
+                }
+                showConfirmation(vehicleId, select.options[select.selectedIndex].textContent);
+              }),
+              actionButton('Volver', '', showTrigger)
+            );
+            form.append(label, buttons);
+            group.replaceChildren(form);
+          } catch (error) {
+            showMessage(error.message || 'No se pudieron cargar los vehículos asignables.', true);
+          } finally {
+            setBusy(false);
+          }
+        };
+        const showConfirmation = (vehicleId, vehicleLabel) => {
+          const confirmation = el('div', 'admin-drawer-cancel-confirmation');
+          confirmation.append(
+            el('strong', '', currentVehicle ? '¿Reasignar este dispositivo al vehículo seleccionado?' : '¿Asignar este vehículo al dispositivo?'),
+            el('p', 'driver-hint', currentVehicle
+              ? 'El dispositivo conservará su identidad. Solo cambiará el vehículo asociado.'
+              : 'El dispositivo quedará asociado al vehículo seleccionado. No se generará una nueva activación.'),
+            el('p', 'driver-hint', `Vehículo destino: ${vehicleLabel}`)
+          );
+          const buttons = el('div', 'driver-actions');
+          buttons.append(
+            actionButton(actionLabel, 'driver-button-primary', async () => {
+              if (busy) return;
+              clearMessage();
+              setBusy(true);
+              try {
+                await post('/api/driver/devices/set_device_vehicle.php', {
+                  device_id: device.device_id,
+                  vehicle_id: vehicleId,
+                  current_vehicle_id: currentVehicle ? Number(currentVehicle.id) : null,
+                  confirm: true
+                });
+                const updated = await request(`/api/driver/activation/get_activation_status.php?device_id=${encodeURIComponent(device.device_id)}`);
+                renderManagedContent(updated, device);
+                await refreshDevices();
+              } catch (error) {
+                showMessage(error.message || 'No se pudo actualizar el vehículo del dispositivo.', true);
+              } finally {
+                setBusy(false);
+              }
+            }),
+            actionButton('Volver', '', showForm)
+          );
+          confirmation.append(buttons);
+          group.replaceChildren(confirmation);
+        };
+        showTrigger();
+        return group;
+      };
       if (detail.administrative_status === 'CANCELLED') {
         const information = el('section', 'admin-drawer-section');
         information.append(el('p', 'driver-hint', 'Esta activación fue cancelada de forma definitiva. El código dejó de ser válido. Para iniciar nuevamente el proceso, debe generarse una Nueva activación.'));
-        drawerBody.replaceChildren(drawerSection('Contexto', context), drawerSection('Detalle', expanded), information);
+        const assignmentAction = vehicleAssignmentAction();
+        const technicalAction = technicalEnablementAction();
+        drawerBody.replaceChildren(
+          drawerSection('Contexto', context),
+          drawerSection('Detalle', expanded),
+          information,
+          ...(assignmentAction ? [assignmentAction] : []),
+          ...(technicalAction ? [technicalAction] : [])
+        );
         return;
       }
       const action = el('section', 'admin-drawer-section admin-drawer-action');
@@ -558,7 +712,12 @@
           action.replaceChildren(el('h3', '', 'Acción contextual'), confirmation);
         };
         showTrigger();
-      } else if (detail.administrative_status === 'ACTIVATED' && detail.enabled && permissions.reactivate && !replacementPending) {
+      } else if (detail.administrative_status === 'ACTIVATED'
+        && detail.enabled
+        && detail.effective_vehicle_count === 1
+        && Number(detail.effective_vehicle?.id) === Number(current?.vehicle_id)
+        && permissions.reactivate
+        && !replacementPending) {
         const showTrigger = () => {
           action.replaceChildren(
             el('h3', '', 'Acción contextual'),
@@ -622,6 +781,10 @@
       if (permissions.cancel && ['PENDING_SEND', 'DELIVERY_STARTED_PENDING_CONFIRMATION', 'SENT_PENDING_ACTIVATION'].includes(detail.administrative_status)) {
         action.append(cancelActivationAction());
       }
+      const assignmentAction = vehicleAssignmentAction();
+      if (assignmentAction) action.append(assignmentAction);
+      const technicalAction = technicalEnablementAction();
+      if (technicalAction) action.append(technicalAction);
       drawerBody.replaceChildren(drawerSection('Contexto', context), drawerSection('Detalle', expanded), action);
     }
 
@@ -746,13 +909,8 @@
         refreshButton.textContent = 'Actualizar';
       }
     }
-    function changeEnabled(device) {
-      const next = !device.enabled;
-      if (!window.confirm(next ? '¿Habilitar este dispositivo?' : '¿Deshabilitar este dispositivo? La activación y las asociaciones se conservarán.')) return;
-      runAction(
-        () => post('/api/driver/devices/set_device_enabled.php', { device_id: device.device_id, enabled: next, confirm: true }),
-        () => { device.enabled = next; render(); }
-      );
+    function changeEnabled(device, enabled) {
+      return post('/api/driver/devices/set_device_enabled.php', { device_id: device.device_id, enabled, confirm: true });
     }
     [search, activation, enabled].forEach(input => input.addEventListener(input === search ? 'input' : 'change', render));
     refreshButton.addEventListener('click', () => refreshDevices());

@@ -27,8 +27,8 @@ $identities = $query->fetchAll(PDO::FETCH_COLUMN);
 
 $failed = 0;
 foreach ($identities as $identity) {
-    $result = ws_core_process_identity_revocation($pdo, (string)$identity);
-    echo $identity . ': ' . ($result['success'] ? 'revocada' : 'pendiente') . PHP_EOL;
+    $result = ws_core_process_identity_sync($pdo, (string)$identity);
+    echo $identity . ': ' . ($result['success'] ? 'sincronizada' : 'pendiente') . PHP_EOL;
     if (!$result['success']) {
         $failed++;
     }

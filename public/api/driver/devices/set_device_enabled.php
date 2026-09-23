@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../../../../services/WsCoreIdentityService.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Allow: POST');
@@ -31,7 +32,7 @@ try {
     $pdo->beginTransaction();
 
     $selectDevice = $pdo->prepare(
-        'SELECT active FROM devices WHERE id = ? AND tenant_id = ? LIMIT 1 FOR UPDATE'
+        'SELECT device_uuid, active FROM devices WHERE id = ? AND tenant_id = ? LIMIT 1 FOR UPDATE'
     );
     $selectDevice->execute([$deviceId, $tenantId]);
     $device = $selectDevice->fetch(PDO::FETCH_ASSOC);
@@ -41,6 +42,18 @@ try {
         driver_error(404, 'DEVICE_NOT_FOUND', 'Dispositivo no encontrado.');
     }
 
+    $replacement = $pdo->prepare(
+        "SELECT id FROM device_activations
+         WHERE status = 'PENDING' AND expires_at > NOW()
+           AND ((device_id = ? AND replaces_device_id IS NOT NULL) OR replaces_device_id = ?)
+         LIMIT 1 FOR UPDATE"
+    );
+    $replacement->execute([$deviceId, $deviceId]);
+    if ($replacement->fetchColumn() !== false) {
+        $pdo->rollBack();
+        driver_error(409, 'DEVICE_REPLACEMENT_PENDING', 'No se puede cambiar la habilitación durante un reemplazo pendiente.');
+    }
+
     if ((int)$device['active'] !== (int)$enabled) {
         $updateDevice = $pdo->prepare(
             'UPDATE devices SET active = ? WHERE id = ? AND tenant_id = ?'
@@ -48,7 +61,10 @@ try {
         $updateDevice->execute([(int)$enabled, $deviceId, $tenantId]);
     }
 
+    ws_core_queue_identity_sync($pdo, $device['device_uuid']);
+
     $pdo->commit();
+    ws_core_process_identity_sync($pdo, $device['device_uuid']);
 
     driver_response(200, [
         'success' => true,

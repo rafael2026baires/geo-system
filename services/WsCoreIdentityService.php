@@ -20,15 +20,30 @@ final class WsCoreIdentityService
 
     public function revokeIdentity(string $deviceUuid): void
     {
+        $this->sendIdentityRequest($deviceUuid, '/identities/revoke', 'revocación');
+    }
+
+    public function clearRevocation(string $deviceUuid): void
+    {
+        $this->sendIdentityRequest($deviceUuid, '/identities/clear-revocation', 'habilitación');
+    }
+
+    public function invalidateMapping(string $deviceUuid): void
+    {
+        $this->sendIdentityRequest($deviceUuid, '/identities/invalidate-mapping', 'invalidación del mapping');
+    }
+
+    private function sendIdentityRequest(string $deviceUuid, string $path, string $operation): void
+    {
         $deviceUuid = trim($deviceUuid);
         if ($deviceUuid === '') {
-            throw new InvalidArgumentException('La identidad a revocar es inválida.');
+            throw new InvalidArgumentException('La identidad a sincronizar es inválida.');
         }
         if (!function_exists('curl_init')) {
             throw new RuntimeException('El cliente HTTP interno no está disponible.');
         }
 
-        $handle = curl_init($this->baseUrl . '/identities/revoke');
+        $handle = curl_init($this->baseUrl . $path);
         if ($handle === false) {
             throw new RuntimeException('No se pudo iniciar la llamada interna a ws-core.');
         }
@@ -56,7 +71,7 @@ final class WsCoreIdentityService
             throw new RuntimeException('Falló la comunicación con ws-core: ' . $networkError);
         }
         if ($httpStatus < 200 || $httpStatus >= 300) {
-            throw new RuntimeException('ws-core rechazó la revocación con HTTP ' . $httpStatus . '.');
+            throw new RuntimeException('ws-core rechazó la ' . $operation . ' con HTTP ' . $httpStatus . '.');
         }
 
         try {
@@ -67,7 +82,7 @@ final class WsCoreIdentityService
         if (!is_object($decoded)
             || (property_exists($decoded, 'success') && $decoded->success !== true)
             || (property_exists($decoded, 'ok') && $decoded->ok !== true)) {
-            throw new RuntimeException('ws-core no confirmó la revocación.');
+            throw new RuntimeException('ws-core no confirmó la ' . $operation . '.');
         }
     }
 }
@@ -80,13 +95,80 @@ function ws_core_identity_service_from_env(): WsCoreIdentityService
     );
 }
 
-function ws_core_queue_identity_revocation(PDO $pdo, string $deviceUuid): void
+function ws_core_queue_identity_sync(PDO $pdo, string $deviceUuid): void
 {
     $queue = $pdo->prepare(
-        'INSERT INTO ws_identity_revocation_outbox (identity) VALUES (?)
-         ON DUPLICATE KEY UPDATE identity = VALUES(identity)'
+        "INSERT INTO ws_identity_revocation_outbox (identity, last_error)
+         VALUES (?, CONCAT('PENDING:', UUID()))
+         ON DUPLICATE KEY UPDATE
+             completed_at = NULL,
+             last_error = CONCAT('PENDING:', UUID()),
+             updated_at = NOW()"
     );
     $queue->execute([$deviceUuid]);
+}
+
+function ws_core_process_identity_sync(
+    PDO $pdo,
+    string $deviceUuid,
+    ?WsCoreIdentityService $service = null
+): array {
+    $syncToken = null;
+    try {
+        $pendingQuery = $pdo->prepare(
+            "SELECT d.active, COALESCE(o.last_error, '') AS sync_token
+             FROM ws_identity_revocation_outbox o
+             INNER JOIN devices d ON d.device_uuid = o.identity
+             WHERE o.identity = ? AND o.completed_at IS NULL LIMIT 1"
+        );
+        $pendingQuery->execute([$deviceUuid]);
+        $pending = $pendingQuery->fetch(PDO::FETCH_ASSOC);
+        if (!$pending) {
+            return ['success' => true, 'error' => null];
+        }
+
+        $active = (int)$pending['active'];
+        $syncToken = (string)$pending['sync_token'];
+        $identityService = $service ?? ws_core_identity_service_from_env();
+        if ($active === 1) {
+            $identityService->clearRevocation($deviceUuid);
+            $identityService->invalidateMapping($deviceUuid);
+        } else {
+            $identityService->revokeIdentity($deviceUuid);
+        }
+
+        $complete = $pdo->prepare(
+            "UPDATE ws_identity_revocation_outbox o
+             INNER JOIN devices d ON d.device_uuid = o.identity
+             SET attempts = attempts + 1, last_attempt_at = NOW(), completed_at = NOW(), last_error = NULL
+             WHERE o.identity = ? AND o.completed_at IS NULL
+               AND COALESCE(o.last_error, '') = ? AND d.active = ?"
+        );
+        $complete->execute([$deviceUuid, $syncToken, $active]);
+        return ['success' => true, 'error' => null];
+    } catch (Throwable $e) {
+        $error = substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 500);
+        try {
+            if ($syncToken !== null) {
+                $pending = $pdo->prepare(
+                    "UPDATE ws_identity_revocation_outbox
+                     SET attempts = attempts + 1, last_attempt_at = NOW(), last_error = ?
+                     WHERE identity = ? AND completed_at IS NULL
+                       AND COALESCE(last_error, '') = ?"
+                );
+                $pending->execute([$error, $deviceUuid, $syncToken]);
+            }
+        } catch (Throwable $persistenceError) {
+            error_log('[WS IDENTITY SYNC OUTBOX ERROR] identity=' . $deviceUuid);
+        }
+        error_log('[WS IDENTITY SYNC PENDING] identity=' . $deviceUuid . ' error=' . $error);
+        return ['success' => false, 'error' => $error];
+    }
+}
+
+function ws_core_queue_identity_revocation(PDO $pdo, string $deviceUuid): void
+{
+    ws_core_queue_identity_sync($pdo, $deviceUuid);
 }
 
 function ws_core_process_identity_revocation(
@@ -94,28 +176,5 @@ function ws_core_process_identity_revocation(
     string $deviceUuid,
     ?WsCoreIdentityService $service = null
 ): array {
-    try {
-        ($service ?? ws_core_identity_service_from_env())->revokeIdentity($deviceUuid);
-        $complete = $pdo->prepare(
-            'UPDATE ws_identity_revocation_outbox
-             SET attempts = attempts + 1, last_attempt_at = NOW(), completed_at = NOW(), last_error = NULL
-             WHERE identity = ?'
-        );
-        $complete->execute([$deviceUuid]);
-        return ['success' => true, 'error' => null];
-    } catch (Throwable $e) {
-        $error = substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 500);
-        try {
-            $pending = $pdo->prepare(
-                'UPDATE ws_identity_revocation_outbox
-                 SET attempts = attempts + 1, last_attempt_at = NOW(), last_error = ?
-                 WHERE identity = ? AND completed_at IS NULL'
-            );
-            $pending->execute([$error, $deviceUuid]);
-        } catch (Throwable $persistenceError) {
-            error_log('[WS IDENTITY REVOCATION OUTBOX ERROR] identity=' . $deviceUuid);
-        }
-        error_log('[WS IDENTITY REVOCATION PENDING] identity=' . $deviceUuid . ' error=' . $error);
-        return ['success' => false, 'error' => $error];
-    }
+    return ws_core_process_identity_sync($pdo, $deviceUuid, $service);
 }

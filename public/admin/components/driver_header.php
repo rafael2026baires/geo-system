@@ -14,6 +14,7 @@ $driverPermissions = [
     'replace' => can('driver.activacion.reemplazar'),
     'enable' => can('driver.device.habilitar'),
     'disable' => can('driver.device.deshabilitar'),
+    'assignVehicle' => can('driver.device.asignar_vehiculo'),
 ];
 ?>
 <main class="admin-content driver-content" id="mainContent" data-driver-page="<?= htmlspecialchars($activePage, ENT_QUOTES, 'UTF-8') ?>" data-permissions="<?= htmlspecialchars(json_encode($driverPermissions), ENT_QUOTES, 'UTF-8') ?>">

@@ -129,6 +129,25 @@ try {
     $vehicleRows = $vehicleQuery->fetchAll(PDO::FETCH_ASSOC);
     $vehicle = $vehicleRows[0] ?? null;
 
+    $activationFlagsQuery = $pdo->prepare(
+        "SELECT
+             COALESCE(MAX(status = 'USED'), 0) AS has_used,
+             COALESCE(MAX(status = 'PENDING' AND expires_at > NOW()), 0) AS has_pending
+         FROM device_activations WHERE device_id = ?"
+    );
+    $activationFlagsQuery->execute([$deviceId]);
+    $activationFlags = $activationFlagsQuery->fetch(PDO::FETCH_ASSOC);
+    $hasUsedActivation = (int)$activationFlags['has_used'] === 1;
+    $hasPendingActivation = (int)$activationFlags['has_pending'] === 1;
+
+    $pendingReplacementQuery = $pdo->prepare(
+        "SELECT id FROM device_activations
+         WHERE replaces_device_id = ? AND status = 'PENDING' AND expires_at > NOW()
+         LIMIT 1"
+    );
+    $pendingReplacementQuery->execute([$deviceId]);
+    $hasPendingReplacement = $pendingReplacementQuery->fetchColumn() !== false;
+
     $replacementQuery = $pdo->prepare(
         'SELECT a.id AS activation_id, a.device_id, d.device_uuid, d.active,
                 a.status, a.expires_at, a.delivery_started_at, a.sent_at, a.used_at,
@@ -175,6 +194,9 @@ try {
             'target_vehicle' => $targetVehicle,
             'effective_vehicle' => $vehicle,
             'effective_vehicle_count' => count($vehicleRows),
+            'has_used_activation' => $hasUsedActivation,
+            'has_pending_activation' => $hasPendingActivation,
+            'has_pending_replacement' => $hasPendingReplacement,
             'replacement' => $replacement,
             'associations' => ['vehicle' => $vehicle, 'driver' => $driver],
             'administrative_status' => $administrativeStatus
