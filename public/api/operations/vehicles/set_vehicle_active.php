@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../../../services/VehicleRegularDriverService.php';
 
 try {
 
@@ -28,6 +29,18 @@ try {
     if (!$vehicleId || !in_array($activo, [0,1,'0','1'], true)) {
         http_response_code(400);
         echo json_encode(['error' => 'Datos incompletos o invalidos']);
+        exit;
+    }
+
+    $pdo->beginTransaction();
+    $lock = $pdo->prepare(
+        'SELECT id FROM vehicles WHERE tenant_id = ? AND id = ? LIMIT 1 FOR UPDATE'
+    );
+    $lock->execute([$tenantId, $vehicleId]);
+    if ($lock->fetchColumn() === false) {
+        $pdo->rollBack();
+        http_response_code(404);
+        echo json_encode(['error' => 'Vehículo no encontrado']);
         exit;
     }
 
@@ -78,6 +91,16 @@ try {
         $vehicleId
     ]);
 
+    if ((int)$activo === 0) {
+        VehicleRegularDriverService::closeCurrentForVehicle(
+            $pdo,
+            (int)$tenantId,
+            (int)$vehicleId
+        );
+    }
+
+    $pdo->commit();
+
     echo json_encode([
         'success' => true,
         'vehicle_id' => $vehicleId,
@@ -85,6 +108,10 @@ try {
     ]);
 
 } catch (Throwable $e) {
+
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
 
     http_response_code(500);
     echo json_encode([

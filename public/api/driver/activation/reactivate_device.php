@@ -34,15 +34,16 @@ try {
         driver_error(403, 'DEVICE_DISABLED', 'El dispositivo está deshabilitado.');
     }
 
-    $latestQuery = $pdo->prepare(
+    $latestUsedQuery = $pdo->prepare(
         'SELECT id, vehicle_id, driver_id, status FROM device_activations
-         WHERE device_id = ? ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
+         WHERE device_id = ? AND status = \'USED\'
+         ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE'
     );
-    $latestQuery->execute([$input->device_id]);
-    $latest = $latestQuery->fetch(PDO::FETCH_ASSOC);
-    if (!$latest || $latest['status'] !== 'USED') {
+    $latestUsedQuery->execute([$input->device_id]);
+    $latestUsed = $latestUsedQuery->fetch(PDO::FETCH_ASSOC);
+    if (!$latestUsed) {
         $pdo->rollBack();
-        driver_error(409, 'ACTIVATION_CONFLICT', 'El dispositivo no tiene una activación usada como última activación.');
+        driver_error(409, 'ACTIVATION_CONFLICT', 'El dispositivo no tiene una activación usada válida.');
     }
 
     $pendingQuery = $pdo->prepare(
@@ -59,13 +60,13 @@ try {
     $links = $pdo->prepare('SELECT vehicle_id FROM vehicle_devices WHERE device_id = ? FOR UPDATE');
     $links->execute([$input->device_id]);
     $vehicleIds = $links->fetchAll(PDO::FETCH_COLUMN);
-    if (count($vehicleIds) !== 1 || (int)$vehicleIds[0] !== (int)$latest['vehicle_id']) {
+    if (count($vehicleIds) !== 1 || (int)$vehicleIds[0] !== (int)$latestUsed['vehicle_id']) {
         $pdo->rollBack();
         driver_error(409, 'ACTIVATION_CONFLICT', 'La asociación efectiva del dispositivo no coincide con la última activación.');
     }
 
-    $vehicleId = (int)$latest['vehicle_id'];
-    $driverId = $latest['driver_id'] === null ? null : (int)$latest['driver_id'];
+    $vehicleId = (int)$latestUsed['vehicle_id'];
+    $driverId = $latestUsed['driver_id'] === null ? null : (int)$latestUsed['driver_id'];
     if (!$vehicleId || !driver_find_enabled_vehicle($pdo, $vehicleId, $tenantId)) {
         $pdo->rollBack();
         driver_error(409, 'ACTIVATION_CONFLICT', 'El vehículo asociado no está disponible.');

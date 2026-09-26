@@ -61,6 +61,13 @@ try {
         $updateDevice->execute([(int)$enabled, $deviceId, $tenantId]);
     }
 
+    if (!$enabled) {
+        $deleteAssociation = $pdo->prepare(
+            'DELETE FROM vehicle_devices WHERE device_id = ?'
+        );
+        $deleteAssociation->execute([$deviceId]);
+    }
+
     ws_core_queue_identity_sync($pdo, $device['device_uuid']);
 
     $pdo->commit();
